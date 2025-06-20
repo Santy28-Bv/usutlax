@@ -6,13 +6,48 @@ class PantallaPrincipal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white, // ✅ Fondo blanco
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text('Menú Principal'),
         centerTitle: true,
-        backgroundColor: const Color.fromRGBO(200, 0, 255, 1), // Morado
-        foregroundColor: Colors.white, // Texto blanco
+        backgroundColor: const Color.fromARGB(255, 0, 0, 0),
+        foregroundColor: Colors.white,
       ),
+
+      // 👉 Drawer lateral
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            const DrawerHeader(
+              decoration: BoxDecoration(
+                color: Color.fromARGB(127, 126, 85, 223),
+              ), //Color dashboard
+              child: Text(
+                'Menú lateral',
+                style: TextStyle(color: Colors.white, fontSize: 20),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.person),
+              title: const Text('Mi perfil'),
+              onTap: () {
+                Navigator.pop(context);
+                // Puedes agregar navegación si tienes esa ruta
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text('Cerrar sesión'),
+              onTap: () {
+                Navigator.pushNamed(context, '/login');
+              },
+            ),
+          ],
+        ),
+      ),
+
+      // 👉 Cuerpo principal
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: GridView.count(
@@ -42,10 +77,39 @@ class PantallaPrincipal extends StatelessWidget {
           ],
         ),
       ),
+
+      // 👉 Barra inferior de navegación
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: const Color.fromARGB(
+          127,
+          126,
+          85,
+          223,
+        ), //Color icono casa inicio
+        unselectedItemColor: Colors.grey,
+        currentIndex: 2, // Inicio
+        onTap: (index) {
+          // Aquí podrías implementar navegación si lo deseas
+        },
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Mi perfil'),
+          BottomNavigationBarItem(icon: Icon(Icons.message), label: 'Mensajes'),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Inicio'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.notifications),
+            label: 'Notificaciones',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Configuración',
+          ),
+        ],
+      ),
     );
   }
 
-  // Nuevo estilo tipo tarjeta para los botones
+  // Tarjeta de botón del menú
   Widget _adminCard(
     BuildContext context,
     IconData icon,
@@ -56,7 +120,7 @@ class PantallaPrincipal extends StatelessWidget {
       onTap: () => Navigator.pushNamed(context, route),
       borderRadius: BorderRadius.circular(12),
       child: Card(
-        color: const Color.fromRGBO(200, 0, 255, 0.9), // Morado suave
+        color: const Color.fromARGB(127, 126, 85, 223), //botones
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         elevation: 6,
         child: Center(
