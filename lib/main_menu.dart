@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'widgets/drawer.dart';
 import 'widgets/bottom_menu.dart';
+import 'screens/gestion_de_unidades.dart'; // ✅ Asegúrate de que el archivo exista y esté en esa ruta
 
 // Pantalla Principal
 class PantallaPrincipal extends StatelessWidget {

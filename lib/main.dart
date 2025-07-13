@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart'; // ✅ Firebase Core
+import 'package:usutlax/screens/gestion_de_unidades.dart';
 import 'firebase_options.dart'; // ✅ Configuración generada
 import 'package:usutlax/screens/gestion_chofer_screen.dart';
 import 'main_menu.dart';
@@ -27,6 +28,7 @@ class MiApp extends StatelessWidget {
       home: const PantallaPrincipal(),
       routes: {
         '/gestion_chofer': (context) => const GestionChoferScreen(),
+        '/unidades_transporte': (context) => const GestionDeUnidadesScreen(),
         '/crear_despachador':
             (context) => const PlaceholderScreen('Crear Despachador'),
         '/ver_rutas': (context) => const PlaceholderScreen('Ver Rutas'),
