@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:usutlax/main_menu.dart';
 import '../widgets/drawer.dart';
 import '../widgets/bottom_menu.dart';
 import 'detalle_unidad.dart';
-import '/main_menu.dart';
 
 class GestionDeUnidadesScreen extends StatefulWidget {
   const GestionDeUnidadesScreen({super.key});
@@ -24,10 +24,16 @@ class _GestionDeUnidadesScreenState extends State<GestionDeUnidadesScreen> {
         title: const Text('UNIDADES'),
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
+        leading: Builder(
+          builder:
+              (context) => IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: () => Scaffold.of(context).openDrawer(),
+              ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.home),
-            tooltip: 'Menú principal',
             onPressed: () {
               Navigator.pushReplacement(
                 context,
@@ -60,9 +66,8 @@ class _GestionDeUnidadesScreenState extends State<GestionDeUnidadesScreen> {
               stream:
                   FirebaseFirestore.instance.collection('unidades').snapshots(),
               builder: (context, snapshot) {
-                if (!snapshot.hasData) {
+                if (!snapshot.hasData)
                   return const Center(child: CircularProgressIndicator());
-                }
 
                 final unidades =
                     snapshot.data!.docs.where((doc) {
@@ -70,7 +75,7 @@ class _GestionDeUnidadesScreenState extends State<GestionDeUnidadesScreen> {
                         return numero.contains(_busqueda);
                       }).toList()
                       ..sort((a, b) {
-                        final numA =
+                        int numA =
                             int.tryParse(
                               a['numero_unidad'].toString().replaceAll(
                                 RegExp(r'\D'),
@@ -78,7 +83,7 @@ class _GestionDeUnidadesScreenState extends State<GestionDeUnidadesScreen> {
                               ),
                             ) ??
                             0;
-                        final numB =
+                        int numB =
                             int.tryParse(
                               b['numero_unidad'].toString().replaceAll(
                                 RegExp(r'\D'),
@@ -93,7 +98,6 @@ class _GestionDeUnidadesScreenState extends State<GestionDeUnidadesScreen> {
                   itemCount: unidades.length,
                   itemBuilder: (context, index) {
                     final unidad = unidades[index];
-                    final id = unidad.id;
                     final numero = unidad['numero_unidad'];
                     final placas = unidad['placas'];
                     final color = unidad['color'] ?? '';
@@ -110,32 +114,32 @@ class _GestionDeUnidadesScreenState extends State<GestionDeUnidadesScreen> {
                       child: ListTile(
                         title: Text('UNIDAD $numero'),
                         subtitle: Text('Placas: $placas'),
+                        leading: const Icon(Icons.remove_red_eye),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.remove_red_eye),
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder:
-                                        (_) =>
-                                            DetalleUnidadScreen(unidad: numero),
-                                  ),
-                                );
-                              },
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.edit),
+                              icon: const Icon(
+                                Icons.edit,
+                                color: Colors.indigo,
+                              ),
                               onPressed: () => _editarUnidad(unidad),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.delete),
-                              onPressed: () => _eliminarUnidad(id),
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () => _eliminarUnidad(unidad.id),
                             ),
                           ],
                         ),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (_) => DetalleUnidadScreen(unidad: numero),
+                            ),
+                          );
+                        },
                       ),
                     );
                   },
@@ -155,17 +159,24 @@ class _GestionDeUnidadesScreenState extends State<GestionDeUnidadesScreen> {
     );
   }
 
-  // Mostrar formulario para agregar unidad
-  void _mostrarFormularioUnidad() {
-    final _colorController = TextEditingController();
-    final _numeroController = TextEditingController();
-    final _placasController = TextEditingController();
+  void _mostrarFormularioUnidad({DocumentSnapshot? unidadExistente}) {
+    final _colorController = TextEditingController(
+      text: unidadExistente?['color'] ?? '',
+    );
+    final _numeroController = TextEditingController(
+      text: unidadExistente?['numero_unidad'] ?? '',
+    );
+    final _placasController = TextEditingController(
+      text: unidadExistente?['placas'] ?? '',
+    );
 
     showDialog(
       context: context,
       builder:
           (_) => AlertDialog(
-            title: const Text('Agregar Unidad'),
+            title: Text(
+              unidadExistente == null ? 'Agregar Unidad' : 'Editar Unidad',
+            ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -211,13 +222,24 @@ class _GestionDeUnidadesScreenState extends State<GestionDeUnidadesScreen> {
                   }
 
                   try {
-                    await FirebaseFirestore.instance.collection('unidades').add(
-                      {
-                        'color': color,
-                        'numero_unidad': numero,
-                        'placas': placas,
-                      },
-                    );
+                    if (unidadExistente == null) {
+                      await FirebaseFirestore.instance
+                          .collection('unidades')
+                          .add({
+                            'color': color,
+                            'numero_unidad': numero,
+                            'placas': placas,
+                          });
+                    } else {
+                      await FirebaseFirestore.instance
+                          .collection('unidades')
+                          .doc(unidadExistente.id)
+                          .update({
+                            'color': color,
+                            'numero_unidad': numero,
+                            'placas': placas,
+                          });
+                    }
                     Navigator.pop(context);
                   } catch (e) {
                     Navigator.pop(context);
@@ -233,80 +255,19 @@ class _GestionDeUnidadesScreenState extends State<GestionDeUnidadesScreen> {
     );
   }
 
-  // Mostrar formulario para editar unidad
-  void _editarUnidad(QueryDocumentSnapshot unidad) {
-    final _colorController = TextEditingController(text: unidad['color']);
-    final _numeroController = TextEditingController(
-      text: unidad['numero_unidad'],
-    );
-    final _placasController = TextEditingController(text: unidad['placas']);
-
-    showDialog(
-      context: context,
-      builder:
-          (_) => AlertDialog(
-            title: const Text('Editar Unidad'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: _numeroController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Número de unidad',
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _placasController,
-                  decoration: const InputDecoration(labelText: 'Placas'),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _colorController,
-                  decoration: const InputDecoration(labelText: 'Color'),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancelar'),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  try {
-                    await FirebaseFirestore.instance
-                        .collection('unidades')
-                        .doc(unidad.id)
-                        .update({
-                          'color': _colorController.text.trim(),
-                          'numero_unidad': _numeroController.text.trim(),
-                          'placas': _placasController.text.trim(),
-                        });
-                    Navigator.pop(context);
-                  } catch (e) {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error al editar: $e')),
-                    );
-                  }
-                },
-                child: const Text('Guardar'),
-              ),
-            ],
-          ),
-    );
+  void _editarUnidad(DocumentSnapshot unidad) {
+    _mostrarFormularioUnidad(unidadExistente: unidad);
   }
 
-  // Eliminar unidad
-  void _eliminarUnidad(String id) async {
+  void _eliminarUnidad(String docId) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder:
           (_) => AlertDialog(
-            title: const Text('¿Eliminar unidad?'),
-            content: const Text('Esta acción no se puede deshacer.'),
+            title: const Text('Eliminar Unidad'),
+            content: const Text(
+              '¿Estás seguro de que deseas eliminar esta unidad?',
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
@@ -321,11 +282,13 @@ class _GestionDeUnidadesScreenState extends State<GestionDeUnidadesScreen> {
     );
 
     if (confirm == true) {
-      await FirebaseFirestore.instance.collection('unidades').doc(id).delete();
+      await FirebaseFirestore.instance
+          .collection('unidades')
+          .doc(docId)
+          .delete();
     }
   }
 
-  // Color translúcido
   Color _obtenerColor(String color) {
     switch (color.toLowerCase()) {
       case 'rojo':
