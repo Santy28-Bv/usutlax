@@ -31,7 +31,7 @@ class PantallaPrincipal extends StatelessWidget {
             Image.asset(
               'assets/img/usu.png',
               width: 235,
-              height: 125,
+              height: 249,
               fit: BoxFit.contain,
             ),
             const SizedBox(height: 10),
@@ -102,7 +102,7 @@ class PantallaPrincipal extends StatelessWidget {
       onTap: () => Navigator.pushNamed(context, route),
       borderRadius: BorderRadius.circular(12),
       child: Card(
-        color: const Color.fromARGB(255, 90, 19, 255),
+        color: const Color.fromARGB(127, 126, 85, 223),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         elevation: 6,
         child: Center(

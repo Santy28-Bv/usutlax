@@ -176,7 +176,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const Icon(
                   Icons.account_circle,
                   size: 120,
-                  color: Color.fromARGB(255, 90, 19, 255),
+                  color: Colors.purple,
                 ),
                 const SizedBox(height: 30),
                 TextField(
@@ -241,7 +241,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: ElevatedButton(
                     onPressed: _cargando ? null : _iniciarSesion,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color.fromARGB(255, 90, 19, 255),
+                      backgroundColor: Colors.purple,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                     child: const Text(
