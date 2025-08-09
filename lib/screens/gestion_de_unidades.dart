@@ -64,10 +64,13 @@ class _GestionDeUnidadesScreenState extends State<GestionDeUnidadesScreen> {
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream:
-                  FirebaseFirestore.instance.collection('unidades').snapshots(),
+                  FirebaseFirestore.instance
+                      .collection('gestion_unidades')
+                      .snapshots(),
               builder: (context, snapshot) {
-                if (!snapshot.hasData)
+                if (!snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
+                }
 
                 final unidades =
                     snapshot.data!.docs.where((doc) {
@@ -195,9 +198,7 @@ class _GestionDeUnidadesScreenState extends State<GestionDeUnidadesScreen> {
                 const SizedBox(height: 8),
                 TextField(
                   controller: _colorController,
-                  decoration: const InputDecoration(
-                    labelText: 'Color (rojo, verde, etc.)',
-                  ),
+                  decoration: const InputDecoration(labelText: 'Color'),
                 ),
               ],
             ),
@@ -221,26 +222,56 @@ class _GestionDeUnidadesScreenState extends State<GestionDeUnidadesScreen> {
                     return;
                   }
 
+                  if (!RegExp(r'^[1-9][0-9]*$').hasMatch(numero)) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'El número de unidad no debe comenzar con 0',
+                        ),
+                      ),
+                    );
+                    return;
+                  }
+
                   try {
                     if (unidadExistente == null) {
+                      // Crear nueva unidad
                       await FirebaseFirestore.instance
-                          .collection('unidades')
+                          .collection('gestion_unidades')
                           .add({
                             'color': color,
                             'numero_unidad': numero,
                             'placas': placas,
                           });
                     } else {
+                      // Actualizar unidad
                       await FirebaseFirestore.instance
-                          .collection('unidades')
+                          .collection('gestion_unidades')
                           .doc(unidadExistente.id)
                           .update({
                             'color': color,
                             'numero_unidad': numero,
                             'placas': placas,
                           });
+
+                      // Actualizar historial
+                      final historialDocs =
+                          await FirebaseFirestore.instance
+                              .collection('historial')
+                              .where('unidad', isEqualTo: numero)
+                              .get();
+
+                      for (var doc in historialDocs.docs) {
+                        await doc.reference.update({'placas': placas});
+                      }
                     }
+
                     Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Unidad guardada correctamente'),
+                      ),
+                    );
                   } catch (e) {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -283,7 +314,7 @@ class _GestionDeUnidadesScreenState extends State<GestionDeUnidadesScreen> {
 
     if (confirm == true) {
       await FirebaseFirestore.instance
-          .collection('unidades')
+          .collection('gestion_unidades')
           .doc(docId)
           .delete();
     }

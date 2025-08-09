@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="usutlax"
+        android:label="Urbanos y Sub Urbanos de Tlaxcala S.A. de C.V."
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 
 class DetalleUnidadScreen extends StatefulWidget {
   final String unidad;
@@ -12,6 +13,11 @@ class DetalleUnidadScreen extends StatefulWidget {
 
 class _DetalleUnidadScreenState extends State<DetalleUnidadScreen> {
   String _busqueda = '';
+
+  String formatearFecha(Timestamp timestamp) {
+    final fecha = timestamp.toDate();
+    return DateFormat('dd/MM/yyyy – HH:mm').format(fecha);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,8 +48,9 @@ class _DetalleUnidadScreenState extends State<DetalleUnidadScreen> {
             child: StreamBuilder<QuerySnapshot>(
               stream:
                   FirebaseFirestore.instance
-                      .collection('historial_unidades')
+                      .collection('historial')
                       .where('unidad', isEqualTo: widget.unidad)
+                      .orderBy('fecha_inicio_sesion', descending: true)
                       .snapshots(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
@@ -52,7 +59,8 @@ class _DetalleUnidadScreenState extends State<DetalleUnidadScreen> {
 
                 final historial =
                     snapshot.data!.docs.where((doc) {
-                      final chofer = doc['chofer'].toString().toLowerCase();
+                      final chofer =
+                          (doc['chofer'] ?? '').toString().toLowerCase();
                       return chofer.contains(_busqueda);
                     }).toList();
 
@@ -63,7 +71,10 @@ class _DetalleUnidadScreenState extends State<DetalleUnidadScreen> {
                 return ListView.builder(
                   itemCount: historial.length,
                   itemBuilder: (context, index) {
-                    final data = historial[index];
+                    final data =
+                        historial[index].data() as Map<String, dynamic>;
+                    final fecha = formatearFecha(data['fecha_inicio_sesion']);
+
                     return Card(
                       color: Colors.grey[300],
                       margin: const EdgeInsets.symmetric(
@@ -76,10 +87,8 @@ class _DetalleUnidadScreenState extends State<DetalleUnidadScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text('Chofer: ${data['chofer']}'),
-                            Text('Fecha: ${data['fecha']}'),
-                            Text('Hora: ${data['hora']}'),
-                            Text('Correo: ${data['correo']}'),
-                            Text('Teléfono: ${data['telefono']}'),
+                            Text('Placas: ${data['placas'] ?? 'N/D'}'),
+                            Text('Fecha y hora: $fecha'),
                           ],
                         ),
                       ),

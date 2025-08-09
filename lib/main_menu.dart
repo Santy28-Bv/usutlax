@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'widgets/drawer.dart';
 import 'widgets/bottom_menu.dart';
-import 'screens/gestion_de_unidades.dart'; // ✅ Asegúrate de que el archivo exista y esté en esa ruta
 
 // Pantalla Principal
 class PantallaPrincipal extends StatelessWidget {
@@ -26,29 +25,62 @@ class PantallaPrincipal extends StatelessWidget {
       //CUERPO PRINCIPAL
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: GridView.count(
-          crossAxisCount: 2,
-          crossAxisSpacing: 20,
-          mainAxisSpacing: 20,
+        child: Column(
           children: [
-            _adminCard(
-              context,
-              Icons.people_alt_outlined,
-              'Gestión de choferes',
-              '/gestion_chofer',
+            // Imagen logo centrada y con tamaño fijo
+            Image.asset(
+              'assets/img/usu.png',
+              width: 235,
+              height: 125,
+              fit: BoxFit.contain,
             ),
-            _adminCard(
-              context,
-              Icons.directions_bus_rounded,
-              'Unidades de Transporte',
-              '/unidades_transporte',
+            const SizedBox(height: 10),
+
+            // Texto bienvenida centrado y en cursiva
+            const Text(
+              'BIENVENIDO A\nLA APP DE USU',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontStyle: FontStyle.italic,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
             ),
-            _adminCard(context, Icons.map, 'Monitoreo GPS', '/monitoreo_gps'),
-            _adminCard(
-              context,
-              Icons.settings,
-              'Configuración',
-              '/configuracion',
+            const SizedBox(height: 20),
+
+            // Grid con botones expandido para que ocupe el espacio restante
+            Expanded(
+              child: GridView.count(
+                crossAxisCount: 2,
+                crossAxisSpacing: 20,
+                mainAxisSpacing: 20,
+                children: [
+                  _adminCard(
+                    context,
+                    Icons.people_alt_outlined,
+                    'Gestión de choferes',
+                    '/gestion_chofer',
+                  ),
+                  _adminCard(
+                    context,
+                    Icons.directions_bus_rounded,
+                    'Unidades de Transporte',
+                    '/unidades_transporte',
+                  ),
+                  _adminCard(
+                    context,
+                    Icons.map,
+                    'Monitoreo GPS',
+                    '/monitoreo_gps',
+                  ),
+                  _adminCard(
+                    context,
+                    Icons.settings,
+                    'Configuración',
+                    '/configuracion',
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -70,7 +102,7 @@ class PantallaPrincipal extends StatelessWidget {
       onTap: () => Navigator.pushNamed(context, route),
       borderRadius: BorderRadius.circular(12),
       child: Card(
-        color: const Color.fromARGB(127, 126, 85, 223),
+        color: const Color.fromARGB(255, 90, 19, 255),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         elevation: 6,
         child: Center(

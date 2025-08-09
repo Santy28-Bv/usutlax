@@ -2,23 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
+import 'package:intl_phone_field/intl_phone_field.dart';
 
-class GestionChoferScreen extends StatefulWidget {
-  const GestionChoferScreen({super.key});
+class GestionUsuariosScreen extends StatefulWidget {
+  const GestionUsuariosScreen({super.key});
 
   @override
-  State<GestionChoferScreen> createState() => _GestionChoferScreenState();
+  State<GestionUsuariosScreen> createState() => _GestionUsuariosScreenState();
 }
 
-class _GestionChoferScreenState extends State<GestionChoferScreen> {
+class _GestionUsuariosScreenState extends State<GestionUsuariosScreen> {
   final _nombreController = TextEditingController();
   final _telefonoController = TextEditingController();
   final _direccionController = TextEditingController();
-  final _edadController = TextEditingController();
-  final _correoController = TextEditingController();
-  final _contrasenaController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   final _usuarioController = TextEditingController();
   final _unidadController = TextEditingController();
+  final _edadController = TextEditingController(); // Ahora edad es TextField
+
   bool _esPosturero = false;
 
   bool _modoFormulario = false;
@@ -42,8 +46,8 @@ class _GestionChoferScreenState extends State<GestionChoferScreen> {
         _telefonoController.text = chofer['telefono'];
         _direccionController.text = chofer['direccion'];
         _edadController.text = chofer['edad'].toString();
-        _correoController.text = chofer['correo_electronico'];
-        _contrasenaController.text = ''; // Se vacía para no mostrar hash
+        _emailController.text = chofer['email'];
+        _passwordController.text = '';
         _usuarioController.text = chofer['nombre_de_usuario'];
         _unidadController.text = chofer['unidad'];
         _esPosturero = chofer['tipo de operador'] == 'Posturero';
@@ -58,54 +62,134 @@ class _GestionChoferScreenState extends State<GestionChoferScreen> {
     _nombreController.clear();
     _telefonoController.clear();
     _direccionController.clear();
-    _edadController.clear();
-    _correoController.clear();
-    _contrasenaController.clear();
+    _emailController.clear();
+    _passwordController.clear();
     _usuarioController.clear();
     _unidadController.clear();
+    _edadController.clear();
     _esPosturero = false;
   }
 
   bool _formularioValido() {
     return _nombreController.text.isNotEmpty &&
-        _telefonoController.text.isNotEmpty &&
         _direccionController.text.isNotEmpty &&
         _edadController.text.isNotEmpty &&
-        _correoController.text.isNotEmpty &&
-        _contrasenaController.text.isNotEmpty &&
+        // no hace falta_emailController.text.isNotEmpty &&
+        _passwordController.text.isNotEmpty &&
         _usuarioController.text.isNotEmpty &&
-        _unidadController.text.isNotEmpty;
+        _unidadController.text.isNotEmpty &&
+        _telefonoController.text.isNotEmpty;
   }
 
+  //aki
   Future<void> _guardarChoferConfirmado() async {
+    final usuario = _usuarioController.text.trim();
+    final email = _emailController.text.trim();
+
+    final edad = int.tryParse(_edadController.text);
+    if (edad == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Edad inválida. Debe ser un número entero.'),
+        ),
+      );
+      return;
+    }
+
+    final snapUsuario =
+        await FirebaseFirestore.instance
+            .collection('gestion_usuarios')
+            .where('nombre_de_usuario', isEqualTo: usuario)
+            .get();
+
+    final snapEmail =
+        await FirebaseFirestore.instance
+            .collection('gestion_usuarios')
+            .where('email', isEqualTo: email)
+            .get();
+
+    bool usuarioExiste = false;
+    bool emailExiste = false;
+
+    if (_modoEdicion && _idEditar != null) {
+      usuarioExiste = snapUsuario.docs.any((doc) => doc.id != _idEditar);
+      emailExiste = snapEmail.docs.any((doc) => doc.id != _idEditar);
+    } else {
+      usuarioExiste = snapUsuario.docs.isNotEmpty;
+      emailExiste = snapEmail.docs.isNotEmpty;
+    }
+
+    // Casos de error combinados con mensajes claros:
+    if (usuarioExiste && emailExiste) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('El correo y el usuario ya existen.')),
+      );
+      return;
+    } else if (usuarioExiste) {
+      if (_modoEdicion) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'No puedes cambiar el nombre de usuario porque ya lo tiene otro usuario.',
+            ),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Este nombre de usuario ya existe, crea otro.'),
+          ),
+        );
+      }
+      return;
+    } else if (emailExiste) {
+      if (_modoEdicion) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'No puedes cambiar el correo porque ya lo tiene otro usuario.',
+            ),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Este correo electrónico ya existe, crea otro.'),
+          ),
+        );
+      }
+      return;
+    }
+    //aca
     final datos = {
       'nombre': _nombreController.text,
       'telefono': _telefonoController.text,
       'direccion': _direccionController.text,
-      'edad': int.tryParse(_edadController.text) ?? 0,
-      'correo_electronico': _correoController.text,
-      'contrasena': generarHash(_contrasenaController.text),
-      'nombre_de_usuario': _usuarioController.text,
+      'edad': edad,
+      'email': email,
+      'password': generarHash(_passwordController.text),
+      'nombre_de_usuario': usuario,
       'unidad': _unidadController.text,
       'tipo de operador': _esPosturero ? 'Posturero' : 'Planta',
+      'rol': 'chofer',
     };
 
     try {
       if (_modoEdicion && _idEditar != null) {
         await FirebaseFirestore.instance
-            .collection('gestion_choferes')
+            .collection('gestion_usuarios')
             .doc(_idEditar)
             .update(datos);
       } else {
         await FirebaseFirestore.instance
-            .collection('gestion_choferes')
+            .collection('gestion_usuarios')
             .add(datos);
       }
 
-      await FirebaseFirestore.instance.collection('historial_unidades').add({
-        'nombre_de_usuario': _usuarioController.text,
+      await FirebaseFirestore.instance.collection('historial').add({
+        'chofer': usuario,
         'unidad': _unidadController.text,
-        'fecha': Timestamp.now(),
+        'fecha_inicio_sesion': Timestamp.now(),
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -126,6 +210,24 @@ class _GestionChoferScreenState extends State<GestionChoferScreen> {
   }
 
   void _guardarChofer() {
+    final unidad = _unidadController.text.trim();
+
+    if (unidad.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('El número de unidad es obligatorio')),
+      );
+      return;
+    }
+
+    if (!RegExp(r'^[1-9][0-9]*$').hasMatch(unidad)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('El número de unidad no debe comenzar con 0'),
+        ),
+      );
+      return;
+    }
+
     if (!_formularioValido()) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Por favor, llena todos los campos')),
@@ -160,7 +262,7 @@ class _GestionChoferScreenState extends State<GestionChoferScreen> {
 
   void _eliminarChofer(String docId) async {
     await FirebaseFirestore.instance
-        .collection('gestion_choferes')
+        .collection('gestion_usuarios')
         .doc(docId)
         .delete();
   }
@@ -168,45 +270,59 @@ class _GestionChoferScreenState extends State<GestionChoferScreen> {
   void _mostrarHistorial(String usuario) async {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       builder: (context) {
-        return FutureBuilder<QuerySnapshot>(
-          future:
-              FirebaseFirestore.instance
-                  .collection('historial_unidades')
-                  .where('nombre_de_usuario', isEqualTo: usuario)
-                  .orderBy('fecha', descending: true)
-                  .get(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Padding(
-                padding: EdgeInsets.all(20),
-                child: Center(child: CircularProgressIndicator()),
-              );
-            }
-
-            final docs = snapshot.data?.docs ?? [];
-
-            if (docs.isEmpty) {
-              return const Padding(
-                padding: EdgeInsets.all(20),
-                child: Center(child: Text('No hay historial disponible.')),
-              );
-            }
-
-            return ListView.builder(
-              itemCount: docs.length,
-              itemBuilder: (context, index) {
-                final data = docs[index].data() as Map<String, dynamic>;
-                final unidad = data['unidad'];
-                final fecha = (data['fecha'] as Timestamp).toDate();
-                return ListTile(
-                  leading: const Icon(Icons.history),
-                  title: Text('Unidad: $unidad'),
-                  subtitle: Text('Fecha: $fecha'),
+        return SizedBox(
+          height: MediaQuery.of(context).size.height * 0.7,
+          child: FutureBuilder<QuerySnapshot>(
+            future:
+                FirebaseFirestore.instance
+                    .collection('historial')
+                    .where('chofer', isEqualTo: usuario) // CAMBIO AQUÍ
+                    .orderBy('fecha_inicio_sesion', descending: true)
+                    .get(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Center(child: CircularProgressIndicator()),
                 );
-              },
-            );
-          },
+              }
+
+              final docs = snapshot.data?.docs ?? [];
+
+              if (docs.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Center(child: Text('No hay historial disponible.')),
+                );
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.all(12),
+                itemCount: docs.length,
+                itemBuilder: (context, index) {
+                  final data = docs[index].data() as Map<String, dynamic>;
+                  final unidad = data['unidad'] ?? 'Sin unidad';
+                  final placas = data['placas'] ?? 'Sin placas';
+                  final fechaTimestamp =
+                      data['fecha_inicio_sesion'] as Timestamp?;
+                  final fecha =
+                      fechaTimestamp != null
+                          ? DateFormat(
+                            'dd/MM/yyyy – HH:mm',
+                          ).format(fechaTimestamp.toDate())
+                          : 'Fecha desconocida';
+
+                  return ListTile(
+                    leading: const Icon(Icons.history),
+                    title: Text('Unidad: $unidad | Placas: $placas'),
+                    subtitle: Text('Fecha: $fecha'),
+                  );
+                },
+              );
+            },
+          ),
         );
       },
     );
@@ -218,6 +334,7 @@ class _GestionChoferScreenState extends State<GestionChoferScreen> {
     TextEditingController controller, {
     TextInputType teclado = TextInputType.text,
     bool oculto = false,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -225,6 +342,7 @@ class _GestionChoferScreenState extends State<GestionChoferScreen> {
         controller: controller,
         obscureText: oculto,
         keyboardType: teclado,
+        inputFormatters: inputFormatters,
         decoration: InputDecoration(
           prefixIcon: Icon(icono),
           labelText: label,
@@ -259,10 +377,29 @@ class _GestionChoferScreenState extends State<GestionChoferScreen> {
                   children: [
                     _campoConIcono(Icons.person, 'Nombre', _nombreController),
                     _campoConIcono(
-                      Icons.phone,
-                      'Teléfono',
-                      _telefonoController,
+                      Icons.account_circle,
+                      'Nombre de usuario',
+                      _usuarioController,
+                    ),
+                    _campoConIcono(
+                      Icons.email,
+                      'Email (opcional si el chofer no tiene correo)',
+                      _emailController,
+                      teclado: TextInputType.emailAddress,
+                    ),
+                    _campoConIcono(
+                      Icons.lock,
+                      'Contraseña',
+                      _passwordController,
+                      oculto: true,
+                    ),
+                    // Edad con sólo números
+                    _campoConIcono(
+                      Icons.cake,
+                      'Edad',
+                      _edadController,
                       teclado: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     ),
                     _campoConIcono(
                       Icons.location_on,
@@ -270,37 +407,26 @@ class _GestionChoferScreenState extends State<GestionChoferScreen> {
                       _direccionController,
                     ),
                     _campoConIcono(
-                      Icons.cake,
-                      'Edad',
-                      _edadController,
+                      Icons.phone,
+                      'Teléfono',
+                      _telefonoController,
                       teclado: TextInputType.number,
-                    ),
-                    _campoConIcono(Icons.email, 'Email', _correoController),
-                    _campoConIcono(
-                      Icons.lock,
-                      'Contraseña',
-                      _contrasenaController,
-                      oculto: true,
-                    ),
-                    _campoConIcono(
-                      Icons.account_circle,
-                      'Nombre de usuario',
-                      _usuarioController,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     ),
                     _campoConIcono(
                       Icons.local_shipping,
                       'Unidad',
                       _unidadController,
+                      teclado: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     ),
                     Row(
                       children: [
                         Checkbox(
                           value: _esPosturero,
-                          onChanged: (val) {
-                            setState(() {
-                              _esPosturero = val ?? false;
-                            });
-                          },
+                          onChanged:
+                              (val) =>
+                                  setState(() => _esPosturero = val ?? false),
                         ),
                         const Expanded(child: Text('¿Es chofer posturero?')),
                       ],
@@ -360,7 +486,7 @@ class _GestionChoferScreenState extends State<GestionChoferScreen> {
                     child: StreamBuilder<QuerySnapshot>(
                       stream:
                           FirebaseFirestore.instance
-                              .collection('gestion_choferes')
+                              .collection('gestion_usuarios')
                               .snapshots(),
                       builder: (context, snapshot) {
                         if (!snapshot.hasData) {
@@ -371,10 +497,13 @@ class _GestionChoferScreenState extends State<GestionChoferScreen> {
 
                         final docs =
                             snapshot.data!.docs.where((doc) {
+                              final data = doc.data() as Map<String, dynamic>;
+                              if (data['rol'] != 'chofer') return false;
+
                               final nombre =
-                                  doc['nombre'].toString().toLowerCase();
+                                  data['nombre'].toString().toLowerCase();
                               final usuario =
-                                  doc['nombre_de_usuario']
+                                  data['nombre_de_usuario']
                                       .toString()
                                       .toLowerCase();
                               return nombre.contains(_busqueda) ||
@@ -394,7 +523,7 @@ class _GestionChoferScreenState extends State<GestionChoferScreen> {
                             final chofer = docs[index];
                             final nombre = chofer['nombre'];
                             final direccion = chofer['direccion'];
-                            final correo = chofer['correo_electronico'];
+                            final email = chofer['email'];
                             final edad = chofer['edad'];
                             final telefono = chofer['telefono'];
                             final tipo = chofer['tipo de operador'];
@@ -409,7 +538,7 @@ class _GestionChoferScreenState extends State<GestionChoferScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Chofer: Unidad $unidad',
+                                      'Chofer: Unidad Actual $unidad',
                                       style: const TextStyle(
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -417,7 +546,7 @@ class _GestionChoferScreenState extends State<GestionChoferScreen> {
                                     Text(nombre),
                                     Text('Usuario: $usuario'),
                                     Text('Dirección: $direccion'),
-                                    Text('Correo: $correo'),
+                                    Text('Email: $email'),
                                     Text('Edad: $edad'),
                                     Text('Teléfono: $telefono'),
                                     Text('Tipo de operador: $tipo'),
@@ -473,3 +602,18 @@ class _GestionChoferScreenState extends State<GestionChoferScreen> {
     );
   }
 }
+//YA FUNCIONA CON USUARIOS,
+//crea otra collecion en historial
+
+//fecha_inicio_sesion
+//16 de julio de 2025, 1:58:19 p.m. UTC-6
+//(marca de tiempo)
+
+
+//nombre_de_usuario
+//"GeraPZT"
+//(cadena)
+
+
+//unidad
+//"2"
