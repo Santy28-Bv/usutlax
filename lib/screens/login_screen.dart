@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import '../main_menu.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -112,10 +113,27 @@ class _LoginScreenState extends State<LoginScreen> {
             'terminos_aceptados': true,
           });
         }
+        // Guardar datos en SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString("nombre", data['nombre'] ?? 'Usuario');
+        await prefs.setString(
+          "username",
+          data['nombre_de_usuario'] ?? 'username',
+        );
+        await prefs.setString("correo", data['email'] ?? '');
+        await prefs.setString("rol", rol ?? '');
+
+        // Si es chofer guardamos su tipo de operador (si existe en Firestore)
+        if (rol == 'chofer') {
+          await prefs.setString(
+            "tipo_operador",
+            data['tipo_operador'] ?? 'No especificado',
+          );
+        }
 
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const PantallaPrincipal()),
+          MaterialPageRoute(builder: (_) => PantallaPrincipal(rol: rol ?? '')),
         );
       } else {
         _mostrarMensaje('Contraseña incorrecta');

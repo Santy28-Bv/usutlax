@@ -4,14 +4,16 @@ import 'widgets/bottom_menu.dart';
 
 // Pantalla Principal
 class PantallaPrincipal extends StatelessWidget {
-  const PantallaPrincipal({super.key});
+  final String rol; // Recibir rol
+
+  const PantallaPrincipal({super.key, required this.rol});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
 
-      //APPBAR
+      // APPBAR
       appBar: AppBar(
         title: const Text('Menú Principal'),
         centerTitle: true,
@@ -19,24 +21,23 @@ class PantallaPrincipal extends StatelessWidget {
         foregroundColor: Colors.white,
       ),
 
-      //DASHBOARD (Drawer)
+      // DASHBOARD (Drawer)
       drawer: const DashboardDrawer(),
-
-      //CUERPO PRINCIPAL
+      // CUERPO PRINCIPAL
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Imagen logo centrada y con tamaño fijo
+            // Imagen logo
             Image.asset(
               'assets/img/usu.png',
               width: 235,
-              height: 249,
+              height: 125,
               fit: BoxFit.contain,
             ),
             const SizedBox(height: 10),
 
-            // Texto bienvenida centrado y en cursiva
+            // Texto bienvenida
             const Text(
               'BIENVENIDO A\nLA APP DE USU',
               textAlign: TextAlign.center,
@@ -48,50 +49,84 @@ class PantallaPrincipal extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // Grid con botones expandido para que ocupe el espacio restante
+            // Grid dinámico
             Expanded(
               child: GridView.count(
                 crossAxisCount: 2,
                 crossAxisSpacing: 20,
                 mainAxisSpacing: 20,
-                children: [
-                  _adminCard(
-                    context,
-                    Icons.people_alt_outlined,
-                    'Gestión de choferes',
-                    '/gestion_chofer',
-                  ),
-                  _adminCard(
-                    context,
-                    Icons.directions_bus_rounded,
-                    'Unidades de Transporte',
-                    '/unidades_transporte',
-                  ),
-                  _adminCard(
-                    context,
-                    Icons.map,
-                    'Monitoreo GPS',
-                    '/monitoreo_gps',
-                  ),
-                  _adminCard(
-                    context,
-                    Icons.settings,
-                    'Configuración',
-                    '/configuracion',
-                  ),
-                ],
+                children: _getOpcionesPorRol(context),
               ),
             ),
           ],
         ),
       ),
 
-      //MENU DE ABAJO
-      bottomNavigationBar: const BottomMenu(),
+      // MENU DE ABAJO
+      bottomNavigationBar: BottomMenu(rol: rol),
     );
   }
 
-  // Widget Tarjeta de Botón
+  // Filtrar opciones por rol
+  List<Widget> _getOpcionesPorRol(BuildContext context) {
+    switch (rol) {
+      case 'admin':
+        return [
+          _adminCard(
+            context,
+            Icons.people_alt_outlined,
+            'Gestión de choferes',
+            '/gestion_chofer',
+          ),
+          _adminCard(
+            context,
+            Icons.directions_bus_rounded,
+            'Unidades de Transporte',
+            '/unidades_transporte',
+          ),
+          _adminCard(context, Icons.map, 'Monitoreo GPS', '/monitoreo_gps'),
+          _adminCard(
+            context,
+            Icons.settings,
+            'Configuración',
+            '/configuracion',
+          ),
+        ];
+
+      case 'despachador':
+        return [
+          _adminCard(
+            context,
+            Icons.person_add,
+            'Añadir Choferes',
+            '/anadir_chofer',
+          ),
+          _adminCard(
+            context,
+            Icons.settings,
+            'Configuración',
+            '/configuracion',
+          ),
+        ];
+
+      case 'chofer':
+        return [
+          _adminCard(context, Icons.qr_code, 'QR', '/qr'),
+          _adminCard(context, Icons.message, 'Mensajes', '/mensajes'),
+          _adminCard(
+            context,
+            Icons.settings,
+            'Configuración',
+            '/configuracion',
+          ),
+        ];
+
+      default:
+        return [];
+    }
+  }
+
+  // Widget tarjeta de botón
   Widget _adminCard(
     BuildContext context,
     IconData icon,

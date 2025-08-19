@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart'; // ✅ Firebase Core
+import 'package:firebase_core/firebase_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:usutlax/screens/gestion_usuarios.dart';
 import 'package:usutlax/screens/gestion_de_unidades.dart';
 import 'package:usutlax/screens/login_screen.dart';
-import 'firebase_options.dart'; // ✅ Configuración generada
+import 'firebase_options.dart';
 import 'main_menu.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized(); // ✅ Necesario para inicializar Firebase
+  WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const MiApp());
 }
@@ -16,15 +16,17 @@ void main() async {
 class MiApp extends StatelessWidget {
   const MiApp({super.key});
 
-  // ✅ Verifica si ya hay sesión guardada
-  Future<bool> _verificarSesion() async {
+  // ✅ Verifica si hay sesión y obtiene rol
+  Future<Map<String, dynamic>> _verificarSesion() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('logueado') ?? false;
+    final logueado = prefs.getBool('logueado') ?? false;
+    final rol = prefs.getString('rol') ?? ''; // Recuperar rol guardado
+    return {'logueado': logueado, 'rol': rol};
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<bool>(
+    return FutureBuilder<Map<String, dynamic>>(
       future: _verificarSesion(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
@@ -32,6 +34,9 @@ class MiApp extends StatelessWidget {
             home: Scaffold(body: Center(child: CircularProgressIndicator())),
           );
         }
+
+        final logueado = snapshot.data!['logueado'] as bool;
+        final rol = snapshot.data!['rol'] as String;
 
         return MaterialApp(
           title: 'Urbanos y Suburbanos de Tlaxcala S.A. de C.V.',
@@ -42,17 +47,18 @@ class MiApp extends StatelessWidget {
             ),
             useMaterial3: true,
           ),
-
-          // ✅ Si está logueado -> menú principal, si no -> login
           home:
-              snapshot.data! ? const PantallaPrincipal() : const LoginScreen(),
-
+              logueado
+                  ? PantallaPrincipal(
+                    rol: rol,
+                  ) // 🔹 Pasamos el rol al menú principal
+                  : const LoginScreen(),
           routes: {
-            '/login': (context) => const LoginScreen(), // ✅ Ruta real
-            '/menu_principal': (context) => const PantallaPrincipal(),
-            '/gestion_chofer': (context) => const GestionUsuariosScreen(),
+            '/login': (context) => const LoginScreen(),
+            '/menu_principal': (context) => PantallaPrincipal(rol: rol),
+            '/gestion_chofer': (context) => GestionUsuariosScreen(rol: rol),
             '/unidades_transporte':
-                (context) => const GestionDeUnidadesScreen(),
+                (context) => GestionDeUnidadesScreen(rol: rol),
             '/crear_despachador':
                 (context) => const PlaceholderScreen('Crear Despachador'),
             '/ver_rutas': (context) => const PlaceholderScreen('Ver Rutas'),

@@ -6,7 +6,12 @@ import '../widgets/bottom_menu.dart';
 import 'detalle_unidad.dart';
 
 class GestionDeUnidadesScreen extends StatefulWidget {
-  const GestionDeUnidadesScreen({super.key});
+  final String rol;
+
+  const GestionDeUnidadesScreen({
+    super.key,
+    required this.rol, // ✅ esto inicializa 'rol'
+  });
 
   @override
   State<GestionDeUnidadesScreen> createState() =>
@@ -37,13 +42,16 @@ class _GestionDeUnidadesScreenState extends State<GestionDeUnidadesScreen> {
             onPressed: () {
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (_) => const PantallaPrincipal()),
+                MaterialPageRoute(
+                  builder: (_) => PantallaPrincipal(rol: widget.rol),
+                ),
               );
             },
           ),
         ],
       ),
       drawer: const DashboardDrawer(),
+
       body: Column(
         children: [
           Padding(
@@ -158,7 +166,7 @@ class _GestionDeUnidadesScreenState extends State<GestionDeUnidadesScreen> {
         onPressed: _mostrarFormularioUnidad,
         child: const Icon(Icons.add),
       ),
-      bottomNavigationBar: const BottomMenu(),
+      bottomNavigationBar: BottomMenu(rol: widget.rol), // ✅ se pasa el rol aquí
     );
   }
 

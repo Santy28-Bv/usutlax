@@ -7,7 +7,12 @@ import 'package:intl/intl.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 
 class GestionUsuariosScreen extends StatefulWidget {
-  const GestionUsuariosScreen({super.key});
+  final String rol; // <-- agregar esta propiedad
+
+  const GestionUsuariosScreen({
+    super.key,
+    required this.rol,
+  }); // <-- agregar parámetro requerido
 
   @override
   State<GestionUsuariosScreen> createState() => _GestionUsuariosScreenState();
