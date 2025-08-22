@@ -27,6 +27,7 @@ class _GestionUsuariosScreenState extends State<GestionUsuariosScreen> {
   final _usuarioController = TextEditingController();
   final _unidadController = TextEditingController();
   final _edadController = TextEditingController(); // Ahora edad es TextField
+  final TextEditingController _searchController = TextEditingController();
 
   bool _esPosturero = false;
 
@@ -47,15 +48,20 @@ class _GestionUsuariosScreenState extends State<GestionUsuariosScreen> {
       _modoEdicion = edicion;
       if (edicion && chofer != null) {
         _idEditar = chofer.id;
-        _nombreController.text = chofer['nombre'];
-        _telefonoController.text = chofer['telefono'];
-        _direccionController.text = chofer['direccion'];
-        _edadController.text = chofer['edad'].toString();
-        _emailController.text = chofer['email'];
+
+        // Leer datos de forma segura
+        final data = (chofer.data() as Map<String, dynamic>?) ?? {};
+
+        _nombreController.text = data['nombre']?.toString() ?? '';
+        _telefonoController.text = data['telefono']?.toString() ?? '';
+        _direccionController.text = data['direccion']?.toString() ?? '';
+        _edadController.text = data['edad']?.toString() ?? '';
+        _emailController.text = data['email']?.toString() ?? '';
         _passwordController.text = '';
-        _usuarioController.text = chofer['nombre_de_usuario'];
-        _unidadController.text = chofer['unidad'];
-        _esPosturero = chofer['tipo de operador'] == 'Posturero';
+        _usuarioController.text = data['nombre_de_usuario']?.toString() ?? '';
+        _unidadController.text = data['unidad']?.toString() ?? '';
+        _esPosturero =
+            (data['tipo de operador']?.toString() ?? '') == 'Posturero';
       } else {
         _limpiarCampos();
       }
@@ -89,7 +95,8 @@ class _GestionUsuariosScreenState extends State<GestionUsuariosScreen> {
   //aki
   Future<void> _guardarChoferConfirmado() async {
     final usuario = _usuarioController.text.trim();
-    final email = _emailController.text.trim();
+    final emailInput = _emailController.text.trim();
+    final String? email = emailInput.isEmpty ? null : emailInput;
 
     final edad = int.tryParse(_edadController.text);
     if (edad == null) {
@@ -101,27 +108,39 @@ class _GestionUsuariosScreenState extends State<GestionUsuariosScreen> {
       return;
     }
 
+    // Consulta para nombre de usuario (siempre)
     final snapUsuario =
         await FirebaseFirestore.instance
             .collection('gestion_usuarios')
             .where('nombre_de_usuario', isEqualTo: usuario)
             .get();
 
-    final snapEmail =
-        await FirebaseFirestore.instance
-            .collection('gestion_usuarios')
-            .where('email', isEqualTo: email)
-            .get();
-
     bool usuarioExiste = false;
     bool emailExiste = false;
 
-    if (_modoEdicion && _idEditar != null) {
-      usuarioExiste = snapUsuario.docs.any((doc) => doc.id != _idEditar);
-      emailExiste = snapEmail.docs.any((doc) => doc.id != _idEditar);
+    if (email != null) {
+      // Solo consultamos correo si se proporcionó uno (evita comparar cadenas vacías)
+      final snapEmail =
+          await FirebaseFirestore.instance
+              .collection('gestion_usuarios')
+              .where('email', isEqualTo: email)
+              .get();
+
+      if (_modoEdicion && _idEditar != null) {
+        usuarioExiste = snapUsuario.docs.any((doc) => doc.id != _idEditar);
+        emailExiste = snapEmail.docs.any((doc) => doc.id != _idEditar);
+      } else {
+        usuarioExiste = snapUsuario.docs.isNotEmpty;
+        emailExiste = snapEmail.docs.isNotEmpty;
+      }
     } else {
-      usuarioExiste = snapUsuario.docs.isNotEmpty;
-      emailExiste = snapEmail.docs.isNotEmpty;
+      // No hay email proporcionado -> no considerar duplicado de email
+      if (_modoEdicion && _idEditar != null) {
+        usuarioExiste = snapUsuario.docs.any((doc) => doc.id != _idEditar);
+      } else {
+        usuarioExiste = snapUsuario.docs.isNotEmpty;
+      }
+      emailExiste = false;
     }
 
     // Casos de error combinados con mensajes claros:
@@ -131,47 +150,35 @@ class _GestionUsuariosScreenState extends State<GestionUsuariosScreen> {
       );
       return;
     } else if (usuarioExiste) {
-      if (_modoEdicion) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'No puedes cambiar el nombre de usuario porque ya lo tiene otro usuario.',
-            ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _modoEdicion
+                ? 'No puedes cambiar el nombre de usuario porque ya lo tiene otro usuario.'
+                : 'Este nombre de usuario ya existe, crea otro.',
           ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Este nombre de usuario ya existe, crea otro.'),
-          ),
-        );
-      }
+        ),
+      );
       return;
     } else if (emailExiste) {
-      if (_modoEdicion) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'No puedes cambiar el correo porque ya lo tiene otro usuario.',
-            ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _modoEdicion
+                ? 'No puedes cambiar el correo porque ya lo tiene otro usuario.'
+                : 'Este correo electrónico ya existe, crea otro.',
           ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Este correo electrónico ya existe, crea otro.'),
-          ),
-        );
-      }
+        ),
+      );
       return;
     }
-    //aca
-    final datos = {
+
+    // Armamos datos: no añadimos 'email' aquí aún
+    final Map<String, dynamic> datos = {
       'nombre': _nombreController.text,
       'telefono': _telefonoController.text,
       'direccion': _direccionController.text,
       'edad': edad,
-      'email': email,
       'password': generarHash(_passwordController.text),
       'nombre_de_usuario': usuario,
       'unidad': _unidadController.text,
@@ -181,11 +188,23 @@ class _GestionUsuariosScreenState extends State<GestionUsuariosScreen> {
 
     try {
       if (_modoEdicion && _idEditar != null) {
+        // En edición: si se ingresó email lo actualizamos; si quedó vacío, lo eliminamos del documento
+        if (email != null) {
+          datos['email'] = email;
+        } else {
+          // elimina el campo 'email' en Firestore
+          datos['email'] = FieldValue.delete();
+        }
+
         await FirebaseFirestore.instance
             .collection('gestion_usuarios')
             .doc(_idEditar)
             .update(datos);
       } else {
+        // Creación: solo añadimos email si fue proporcionado
+        if (email != null) {
+          datos['email'] = email;
+        }
         await FirebaseFirestore.instance
             .collection('gestion_usuarios')
             .add(datos);
@@ -205,7 +224,24 @@ class _GestionUsuariosScreenState extends State<GestionUsuariosScreen> {
         ),
       );
 
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _modoEdicion ? 'Chofer actualizado' : 'Chofer guardado',
+          ),
+        ),
+      );
+
+      // Cerrar formulario
       _toggleFormulario();
+
+      // Limpiar búsqueda en el cuadro de texto
+      _searchController.clear();
+
+      // Limpiar filtro de búsqueda para que deje de mostrar solo el resultado anterior
+      setState(() {
+        _busqueda = '';
+      });
     } catch (e) {
       _toggleFormulario();
       ScaffoldMessenger.of(
@@ -475,6 +511,7 @@ class _GestionUsuariosScreenState extends State<GestionUsuariosScreen> {
                   Padding(
                     padding: const EdgeInsets.all(12),
                     child: TextField(
+                      controller: _searchController, // <-- aquí
                       decoration: const InputDecoration(
                         prefixIcon: Icon(Icons.search),
                         hintText: 'Buscar...',
@@ -487,11 +524,15 @@ class _GestionUsuariosScreenState extends State<GestionUsuariosScreen> {
                       },
                     ),
                   ),
+
                   Expanded(
                     child: StreamBuilder<QuerySnapshot>(
                       stream:
                           FirebaseFirestore.instance
                               .collection('gestion_usuarios')
+                              .orderBy(
+                                'nombre',
+                              ) // <-- orden alfabético por campo 'nombre'
                               .snapshots(),
                       builder: (context, snapshot) {
                         if (!snapshot.hasData) {
@@ -526,14 +567,21 @@ class _GestionUsuariosScreenState extends State<GestionUsuariosScreen> {
                           itemCount: docs.length,
                           itemBuilder: (context, index) {
                             final chofer = docs[index];
-                            final nombre = chofer['nombre'];
-                            final direccion = chofer['direccion'];
-                            final email = chofer['email'];
-                            final edad = chofer['edad'];
-                            final telefono = chofer['telefono'];
-                            final tipo = chofer['tipo de operador'];
-                            final unidad = chofer['unidad'];
-                            final usuario = chofer['nombre_de_usuario'];
+                            // Leer datos de forma segura como Map (evita excepción si no existe alguna clave)
+                            final data =
+                                (chofer.data() as Map<String, dynamic>?) ?? {};
+
+                            final nombre = data['nombre']?.toString() ?? '';
+                            final direccion =
+                                data['direccion']?.toString() ?? '';
+                            final email = data['email']?.toString() ?? '';
+                            final edad = data['edad']?.toString() ?? '';
+                            final telefono = data['telefono']?.toString() ?? '';
+                            final tipo =
+                                data['tipo de operador']?.toString() ?? '';
+                            final unidad = data['unidad']?.toString() ?? '';
+                            final usuario =
+                                data['nombre_de_usuario']?.toString() ?? '';
 
                             return Card(
                               margin: const EdgeInsets.only(bottom: 10),
@@ -551,7 +599,9 @@ class _GestionUsuariosScreenState extends State<GestionUsuariosScreen> {
                                     Text(nombre),
                                     Text('Usuario: $usuario'),
                                     Text('Dirección: $direccion'),
-                                    Text('Email: $email'),
+                                    Text(
+                                      'Email: ${email.isEmpty ? "Sin email" : email}',
+                                    ),
                                     Text('Edad: $edad'),
                                     Text('Teléfono: $telefono'),
                                     Text('Tipo de operador: $tipo'),
