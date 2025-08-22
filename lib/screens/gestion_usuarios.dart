@@ -28,6 +28,8 @@ class _GestionUsuariosScreenState extends State<GestionUsuariosScreen> {
   final _unidadController = TextEditingController();
   final _edadController = TextEditingController(); // Ahora edad es TextField
   final TextEditingController _searchController = TextEditingController();
+  final _vigenciaLicenciaController = TextEditingController();
+  final _vigenciaPermisoController = TextEditingController();
 
   bool _esPosturero = false;
 
@@ -62,6 +64,20 @@ class _GestionUsuariosScreenState extends State<GestionUsuariosScreen> {
         _unidadController.text = data['unidad']?.toString() ?? '';
         _esPosturero =
             (data['tipo de operador']?.toString() ?? '') == 'Posturero';
+
+        _vigenciaLicenciaController.text =
+            data['vigencia_licencia'] != null
+                ? DateFormat(
+                  'dd/MM/yyyy',
+                ).format((data['vigencia_licencia'] as Timestamp).toDate())
+                : '';
+
+        _vigenciaPermisoController.text =
+            data['vigencia_permiso'] != null
+                ? DateFormat(
+                  'dd/MM/yyyy',
+                ).format((data['vigencia_permiso'] as Timestamp).toDate())
+                : '';
       } else {
         _limpiarCampos();
       }
@@ -79,6 +95,8 @@ class _GestionUsuariosScreenState extends State<GestionUsuariosScreen> {
     _unidadController.clear();
     _edadController.clear();
     _esPosturero = false;
+    _vigenciaLicenciaController.clear();
+    _vigenciaPermisoController.clear();
   }
 
   bool _formularioValido() {
@@ -185,6 +203,17 @@ class _GestionUsuariosScreenState extends State<GestionUsuariosScreen> {
       'tipo de operador': _esPosturero ? 'Posturero' : 'Planta',
       'rol': 'chofer',
     };
+    // 👇 Agregar las fechas de vigencia si no están vacías
+    if (_vigenciaLicenciaController.text.isNotEmpty) {
+      datos['vigencia_licencia'] = Timestamp.fromDate(
+        DateFormat('dd/MM/yyyy').parse(_vigenciaLicenciaController.text),
+      );
+    }
+    if (_vigenciaPermisoController.text.isNotEmpty) {
+      datos['vigencia_permiso'] = Timestamp.fromDate(
+        DateFormat('dd/MM/yyyy').parse(_vigenciaPermisoController.text),
+      );
+    }
 
     try {
       if (_modoEdicion && _idEditar != null) {
@@ -461,6 +490,54 @@ class _GestionUsuariosScreenState extends State<GestionUsuariosScreen> {
                       teclado: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     ),
+                    // 👇 NUEVOS CAMPOS AQUÍ
+                    GestureDetector(
+                      onTap: () async {
+                        DateTime? picked = await showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now(),
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                        );
+                        if (picked != null) {
+                          _vigenciaLicenciaController.text = DateFormat(
+                            'dd/MM/yyyy',
+                          ).format(picked);
+                        }
+                      },
+                      child: AbsorbPointer(
+                        child: _campoConIcono(
+                          Icons.badge,
+                          'Vigencia de Licencia',
+                          _vigenciaLicenciaController,
+                        ),
+                      ),
+                    ),
+
+                    GestureDetector(
+                      onTap: () async {
+                        DateTime? picked = await showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now(),
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                        );
+                        if (picked != null) {
+                          _vigenciaPermisoController.text = DateFormat(
+                            'dd/MM/yyyy',
+                          ).format(picked);
+                        }
+                      },
+                      child: AbsorbPointer(
+                        child: _campoConIcono(
+                          Icons.assignment,
+                          'Vigencia de Permiso',
+                          _vigenciaPermisoController,
+                        ),
+                      ),
+                    ),
+
+                    // 👆 NUEVOS CAMPOS AQUÍ
                     Row(
                       children: [
                         Checkbox(
@@ -605,6 +682,43 @@ class _GestionUsuariosScreenState extends State<GestionUsuariosScreen> {
                                     Text('Edad: $edad'),
                                     Text('Teléfono: $telefono'),
                                     Text('Tipo de operador: $tipo'),
+                                    // 👇 NUEVO BLOQUE: Vigencias
+                                    if (data['vigencia_licencia'] != null)
+                                      Text(
+                                        "Vigencia Licencia: ${DateFormat('dd/MM/yy').format((data['vigencia_licencia'] as Timestamp).toDate())}"
+                                        "${(data['vigencia_licencia'] as Timestamp).toDate().isBefore(DateTime.now()) ? ' (Caducó)' : ''}",
+                                        style:
+                                            (data['vigencia_licencia']
+                                                        as Timestamp)
+                                                    .toDate()
+                                                    .isBefore(DateTime.now())
+                                                ? const TextStyle(
+                                                  color: Colors.red,
+                                                  fontWeight: FontWeight.bold,
+                                                )
+                                                : const TextStyle(
+                                                  color: Colors.black,
+                                                ),
+                                      ),
+                                    if (data['vigencia_permiso'] != null)
+                                      Text(
+                                        "Vigencia Permiso: ${DateFormat('dd/MM/yy').format((data['vigencia_permiso'] as Timestamp).toDate())}"
+                                        "${(data['vigencia_permiso'] as Timestamp).toDate().isBefore(DateTime.now()) ? ' (Caducó)' : ''}",
+                                        style:
+                                            (data['vigencia_permiso']
+                                                        as Timestamp)
+                                                    .toDate()
+                                                    .isBefore(DateTime.now())
+                                                ? const TextStyle(
+                                                  color: Colors.red,
+                                                  fontWeight: FontWeight.bold,
+                                                )
+                                                : const TextStyle(
+                                                  color: Colors.black,
+                                                ),
+                                      ),
+
+                                    // 👆 NUEVO BLOQUE
                                     const SizedBox(height: 6),
                                     Row(
                                       mainAxisAlignment: MainAxisAlignment.end,
