@@ -1,28 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'widgets/drawer.dart';
 import 'widgets/bottom_menu.dart';
+import '../providers/configuracion_provider.dart';
 
 // Pantalla Principal
 class PantallaPrincipal extends StatelessWidget {
-  final String rol; // Recibir rol
+  final String rol;
 
   const PantallaPrincipal({super.key, required this.rol});
 
   @override
   Widget build(BuildContext context) {
+    final config = Provider.of<ConfiguracionProvider>(context);
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      // ✅ El fondo ahora depende del tema
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
 
       // APPBAR
       appBar: AppBar(
         title: const Text('Menú Principal'),
         centerTitle: true,
-        backgroundColor: const Color.fromARGB(255, 0, 0, 0),
-        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+        foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
       ),
 
       // DASHBOARD (Drawer)
       drawer: const DashboardDrawer(),
+
       // CUERPO PRINCIPAL
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -30,21 +36,27 @@ class PantallaPrincipal extends StatelessWidget {
           children: [
             // Imagen logo
             Image.asset(
-              'assets/img/usu.png',
+              Theme.of(context).brightness == Brightness.dark
+                  ? 'assets/img/usublanco.png' // 🌙 modo oscuro
+                  : 'assets/img/usu.png', // ☀️ modo claro
               width: 235,
               height: 125,
               fit: BoxFit.contain,
             ),
             const SizedBox(height: 10),
 
-            // Texto bienvenida
-            const Text(
+            // ✅ Texto bienvenida adaptado al tema
+            Text(
               'BIENVENIDO A\nLA APP DE USU',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontStyle: FontStyle.italic,
                 fontWeight: FontWeight.bold,
-                fontSize: 18,
+                fontSize: config.fontSize, // 🔎 Usa tamaño dinámico
+                color:
+                    Theme.of(
+                      context,
+                    ).textTheme.bodyLarge?.color, // ✅ Color según tema
               ),
             ),
             const SizedBox(height: 20),

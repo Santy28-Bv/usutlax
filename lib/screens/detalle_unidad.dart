@@ -23,9 +23,15 @@ class _DetalleUnidadScreenState extends State<DetalleUnidadScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('UNIDAD ${widget.unidad}'),
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        centerTitle: true, // 👈 centramos el título
+        title: Text(
+          'UNIDAD ${widget.unidad}',
+          style: const TextStyle(
+            fontFamily: 'Times New Roman', // tipografía personalizada
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
       ),
       body: Column(
         children: [

@@ -10,14 +10,18 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   cupertino_icons: ^1.0.8
   firebase_core: ^3.15.1
   cloud_firestore: ^5.6.11
   crypto: ^3.0.2
   shared_preferences: ^2.2.2
-  intl: ^0.18.1
+  intl: ^0.19.0
   intl_phone_field: ^3.2.0
   flutter_launcher_icons: ^0.14.4
+  provider: ^6.0.5
+
   
 
 flutter_icons:
@@ -37,5 +41,7 @@ flutter:
     - assets/img/logo1.png
     - assets/img/logo2.png
     - assets/img/logo3.png
+    - assets/img/usulogoconfondo.png
+    - assets/img/usublanco.png
 
 

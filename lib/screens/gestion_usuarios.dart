@@ -426,18 +426,19 @@ class _GestionUsuariosScreenState extends State<GestionUsuariosScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme:
+            Theme.of(context).appBarTheme.iconTheme, // usa colores del tema
         title: Text(
           _modoFormulario
               ? (_modoEdicion ? 'Editar Chofer' : 'Añadir Chofer')
               : 'Gestión de Choferes',
           style: const TextStyle(
             fontWeight: FontWeight.bold,
-            color: Colors.white,
-            fontFamily: 'Times New Roman',
+            fontFamily: 'Times New Roman', // 👈 se mantiene tu tipografía
+            fontSize: 20,
           ),
         ),
-        backgroundColor: Colors.black,
+        // ❌ quitamos backgroundColor: Colors.black
       ),
       body:
           _modoFormulario

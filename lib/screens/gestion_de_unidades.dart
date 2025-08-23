@@ -26,9 +26,15 @@ class _GestionDeUnidadesScreenState extends State<GestionDeUnidadesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('UNIDADES'),
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        centerTitle: true, // 👈 centra el título
+        title: const Text(
+          'UNIDADES',
+          style: TextStyle(
+            fontFamily: 'Times New Roman',
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
         leading: Builder(
           builder:
               (context) => IconButton(
@@ -50,6 +56,7 @@ class _GestionDeUnidadesScreenState extends State<GestionDeUnidadesScreen> {
           ),
         ],
       ),
+
       drawer: const DashboardDrawer(),
 
       body: Column(
