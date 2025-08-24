@@ -1,5 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class DashboardDrawer extends StatefulWidget {
   const DashboardDrawer({super.key});
@@ -12,8 +16,9 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
   String _nombre = "Usuario";
   String _username = "username";
   String? _correo;
-  String? _tipoOperador; // ✅ corregido: debe coincidir con el login
+  String? _tipoOperador;
   String _rol = "invitado";
+  String? _fotoUrl; // ✅ Foto de perfil
 
   @override
   void initState() {
@@ -23,14 +28,87 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
 
   Future<void> _cargarDatosUsuario() async {
     final prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    setState(() {
+    final userId = prefs.getString("usuarioId");
+
+    if (userId != null) {
+      try {
+        final doc =
+            await FirebaseFirestore.instance
+                .collection("gestion_usuarios")
+                .doc(userId)
+                .get();
+
+        if (doc.exists) {
+          final data = doc.data()!;
+          _nombre = data["nombre"] ?? "Usuario";
+          _username = data["username"] ?? "username";
+          _correo = data["correo"];
+          _tipoOperador = data["tipo_operador"];
+          _rol = data["rol"] ?? "invitado";
+          _fotoUrl = data["fotoUrl"];
+
+          // 🔹 Guardamos en cache local
+          await prefs.setString("nombre", _nombre);
+          await prefs.setString("username", _username);
+          if (_correo != null) await prefs.setString("correo", _correo!);
+          if (_tipoOperador != null) {
+            await prefs.setString("tipo_operador", _tipoOperador!);
+          }
+          await prefs.setString("rol", _rol);
+          if (_fotoUrl != null) await prefs.setString("fotoUrl", _fotoUrl!);
+        }
+      } catch (e) {
+        debugPrint("❌ Error al cargar Firestore: $e");
+      }
+    } else {
+      // Si no hay usuarioId cargamos lo que haya en cache
       _nombre = prefs.getString("nombre") ?? "Usuario";
       _username = prefs.getString("username") ?? "username";
       _correo = prefs.getString("correo");
-      _tipoOperador = prefs.getString("tipo_operador"); // 👈 igual que en login
+      _tipoOperador = prefs.getString("tipo_operador");
       _rol = prefs.getString("rol") ?? "invitado";
-    });
+      _fotoUrl = prefs.getString("fotoUrl");
+    }
+
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _cambiarFoto() async {
+    final picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+    if (image == null) return;
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString("usuarioId");
+
+      if (userId == null) return;
+
+      // Subimos la foto a Firebase Storage
+      final ref = FirebaseStorage.instance.ref().child("usuarios/$userId.jpg");
+      await ref.putFile(File(image.path));
+      final url = await ref.getDownloadURL();
+
+      // Guardamos en Firestore
+      await FirebaseFirestore.instance
+          .collection("gestion_usuarios")
+          .doc(userId)
+          .update({"fotoUrl": url});
+
+      // Guardamos en SharedPreferences
+      await prefs.setString("fotoUrl", url);
+
+      setState(() => _fotoUrl = url);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("✅ Foto actualizada correctamente")),
+        );
+      }
+    } catch (e) {
+      debugPrint("❌ Error al subir foto: $e");
+    }
   }
 
   @override
@@ -43,9 +121,21 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
             decoration: const BoxDecoration(
               color: Color.fromARGB(255, 76, 0, 255),
             ),
-            currentAccountPicture: const CircleAvatar(
-              backgroundColor: Colors.white,
-              child: Icon(Icons.person, size: 40, color: Colors.purple),
+            currentAccountPicture: GestureDetector(
+              onTap: _cambiarFoto, // 📸 Cambiar desde el drawer
+              child: CircleAvatar(
+                backgroundColor: Colors.white,
+                backgroundImage:
+                    _fotoUrl != null ? NetworkImage(_fotoUrl!) : null,
+                child:
+                    _fotoUrl == null
+                        ? const Icon(
+                          Icons.person,
+                          size: 40,
+                          color: Colors.purple,
+                        )
+                        : null,
+              ),
             ),
             accountName: Padding(
               padding: const EdgeInsets.only(top: 24),
@@ -147,7 +237,11 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
             "Inicio",
             () => Navigator.pushNamed(context, '/menu_principal'),
           ),
-          _item(Icons.person, "Mi perfil", () {}),
+          _item(
+            Icons.person,
+            "Mi perfil",
+            () => Navigator.pushNamed(context, '/perfil'),
+          ),
           _item(Icons.gps_fixed, "Monitoreo GPS", () {}),
           _item(
             Icons.message,
@@ -192,6 +286,11 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
             Icons.home,
             "Inicio",
             () => Navigator.pushNamed(context, '/menu_principal'),
+          ),
+          _item(
+            Icons.person,
+            "Mi perfil",
+            () => Navigator.pushNamed(context, '/perfil'),
           ),
           _item(
             Icons.message,

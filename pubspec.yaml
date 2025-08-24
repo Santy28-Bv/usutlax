@@ -21,7 +21,12 @@ dependencies:
   intl_phone_field: ^3.2.0
   flutter_launcher_icons: ^0.14.4
   provider: ^6.0.5
-
+  firebase_storage: ^12.4.9
+  image_picker: ^1.1.2
+  firebase_database: ^11.3.9
+  google_maps_flutter: ^2.9.0
+  geolocator: ^11.0.0
+  location: ^6.0.1
   
 
 flutter_icons:
@@ -43,5 +48,6 @@ flutter:
     - assets/img/logo3.png
     - assets/img/usulogoconfondo.png
     - assets/img/usublanco.png
+    - assets/img/profile.png
 
 

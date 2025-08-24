@@ -2,30 +2,81 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:usutlax/providers/configuracion_provider.dart';
 
+import '../widgets/drawer.dart';
+
 class ConfiguracionScreen extends StatelessWidget {
   const ConfiguracionScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // 👇 Obtenemos el provider
     final config = Provider.of<ConfiguracionProvider>(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Configuración"),
-        backgroundColor: Colors.black87,
+        centerTitle: true, // 👈 siempre centrado
+        title: Text(
+          "Configuración",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Times New Roman',
+            fontSize: 20,
+            color: config.modoOscuro ? Colors.white : Colors.black,
+          ),
+        ),
+        backgroundColor: config.modoOscuro ? Colors.black87 : Colors.white,
+
+        // 🔙 Flecha a la izquierda
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back_ios_rounded,
+            color: config.modoOscuro ? Colors.white : Colors.black,
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
+
+        // ☰ Menú a la derecha
+        actions: [
+          Builder(
+            builder:
+                (context) => IconButton(
+                  icon: Icon(
+                    Icons.menu,
+                    color: config.modoOscuro ? Colors.white : Colors.black,
+                  ),
+                  onPressed: () => Scaffold.of(context).openDrawer(),
+                ),
+          ),
+        ],
       ),
+
+      // 👇 Drawer integrado
+      drawer: const DashboardDrawer(),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text(
+          Text(
             "ACCOUNT",
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: config.modoOscuro ? Colors.white70 : Colors.grey,
+            ),
           ),
           ListTile(
-            leading: const Icon(Icons.person_outline),
-            title: const Text("Información Personal"),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+            leading: Icon(
+              Icons.person_outline,
+              color: config.modoOscuro ? Colors.white : Colors.black,
+            ),
+            title: Text(
+              "Información Personal",
+              style: TextStyle(
+                color: config.modoOscuro ? Colors.white : Colors.black,
+              ),
+            ),
+            trailing: Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: config.modoOscuro ? Colors.white70 : Colors.black54,
+            ),
             onTap: () {},
           ),
           const SizedBox(height: 20),
@@ -35,7 +86,7 @@ class ConfiguracionScreen extends StatelessWidget {
             style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
           ),
 
-          // ✅ Switch de Modo Oscuro usando provider
+          // ✅ Switch de modo oscuro
           SwitchListTile(
             secondary: const Icon(Icons.dark_mode_outlined),
             title: const Text("Modo Oscuro"),
@@ -45,17 +96,12 @@ class ConfiguracionScreen extends StatelessWidget {
             },
           ),
 
-          // ✅ Tamaño del Texto usando provider
+          // ✅ Tamaño del Texto (sin tipografía)
           ListTile(
             leading: const Icon(Icons.text_fields),
-            title: const Text("Tamaño del Texto"),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(config.tamanoTexto),
-                const Icon(Icons.arrow_forward_ios, size: 16),
-              ],
-            ),
+            title: const Text("Tamaño de texto"),
+            subtitle: Text("${config.tamanoTexto}"),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
             onTap: () {
               _mostrarDialogoTamanoTexto(context, config);
             },
@@ -96,40 +142,84 @@ class ConfiguracionScreen extends StatelessWidget {
     );
   }
 
+  // 🔹 Modal solo con el slider de tamaño
   void _mostrarDialogoTamanoTexto(
     BuildContext context,
     ConfiguracionProvider config,
   ) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text("Tamaño del Texto"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _opcionTexto("Pequeño", config, context),
-              _opcionTexto("Mediano", config, context),
-              _opcionTexto("Grande", config, context),
-            ],
-          ),
-        );
-      },
-    );
-  }
+    double tempSize = config.tamanoTextoPx;
 
-  Widget _opcionTexto(
-    String opcion,
-    ConfiguracionProvider config,
-    BuildContext context,
-  ) {
-    return RadioListTile<String>(
-      title: Text(opcion),
-      value: opcion,
-      groupValue: config.tamanoTexto,
-      onChanged: (value) {
-        config.cambiarTamanoTexto(value!); // 👈 Corrección aquí
-        Navigator.pop(context);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor:
+          config.modoOscuro
+              ? const Color.fromARGB(221, 0, 0, 0) // oscuro -> negro
+              : Colors.white, // claro -> blanco
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Tamaño de letra",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: config.modoOscuro ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 15),
+
+                  Slider(
+                    value: tempSize,
+                    min: 12,
+                    max: 30,
+                    divisions: 6,
+                    label: "${tempSize.toInt()}",
+                    activeColor: const Color.fromARGB(255, 25, 0, 255),
+                    onChanged: (value) {
+                      setState(() {
+                        tempSize = value;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 20),
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      onPressed: () {
+                        config.cambiarTamanoTextoPx(tempSize);
+                        Navigator.pop(context);
+                      },
+                      child: Text(
+                        "Aplicar",
+                        style: TextStyle(
+                          color:
+                              config.modoOscuro ? Colors.white : Colors.black,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
       },
     );
   }

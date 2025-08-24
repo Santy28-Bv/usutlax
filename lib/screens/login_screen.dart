@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
+import 'package:usutlax/chofer_tracking.dart';
 import '../main_menu.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -16,10 +17,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _usuarioCorreoController =
       TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  bool _aceptoTerminos = false;
   bool _mostrarContrasena = false;
   bool _cargando = false;
-  bool _mostrarCheckbox = true;
 
   DocumentSnapshot? _usuarioEncontrado;
 
@@ -35,6 +34,58 @@ class _LoginScreenState extends State<LoginScreen> {
     ).showSnackBar(SnackBar(content: Text(mensaje)));
   }
 
+  // Dialogo reutilizable de Términos & Condiciones (devuelve true si acepta)
+  Future<bool> _mostrarDialogoTerminos() async {
+    final acepto = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (_) => AlertDialog(
+            title: const Text("Términos y Condiciones"),
+            content: const SingleChildScrollView(
+              child: Text(
+                "Al usar esta aplicación aceptas que:\n\n"
+                "- La app podrá acceder a tu ubicación para mejorar el servicio.\n"
+                "- Podrá acceder a tus archivos para almacenar tickets de viaje.\n"
+                "- El uso indebido puede resultar en suspensión de tu cuenta.\n"
+                "- Tus datos estarán sujetos a la política de privacidad.\n",
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text("Rechazar"),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text("Aceptar"),
+              ),
+            ],
+          ),
+    );
+    return acepto == true;
+  }
+
+  // Aviso cuando no acepta los términos (solo botón Cerrar)
+  Future<void> _mostrarDialogoDebeAceptar() async {
+    await showDialog<void>(
+      context: context,
+      builder:
+          (_) => AlertDialog(
+            title: const Text("Aviso"),
+            content: const Text(
+              "Debes aceptar los Términos y Condiciones para usar la app.",
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Cerrar"),
+              ),
+            ],
+          ),
+    );
+  }
+
   Future<void> _iniciarSesion() async {
     final input = _usuarioCorreoController.text.trim();
     final password = _passwordController.text.trim();
@@ -48,6 +99,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final hashIngresado = generarHash(password);
 
     try {
+      // Buscar por usuario o por correo
       QuerySnapshot query =
           await FirebaseFirestore.instance
               .collection('gestion_usuarios')
@@ -72,48 +124,30 @@ class _LoginScreenState extends State<LoginScreen> {
       final data = _usuarioEncontrado!.data() as Map<String, dynamic>;
       final passwordAlmacenada = data['password'];
 
-      // Verifica si ya aceptó los términos
-      final yaAcepto = data['terminos_aceptados'] == true;
-
-      if (!yaAcepto && !_aceptoTerminos) {
-        _mostrarMensaje('Debes aceptar los Términos y Condiciones');
-        setState(() => _cargando = false);
-        return;
-      }
-
+      // ✅ Validar contraseña (plain o hash)
       if (passwordAlmacenada == password ||
           passwordAlmacenada == hashIngresado) {
         final rol = data['rol']?.toString().toLowerCase();
-        if (rol == 'chofer') {
-          final unidad = data['unidad'] ?? 'Desconocida';
-          final nombreUsuario = data['nombre_de_usuario'] ?? 'Sin nombre';
+        final yaAcepto = data['terminos_aceptados'] == true;
 
-          final unidadQuery =
-              await FirebaseFirestore.instance
-                  .collection('gestion_unidades')
-                  .where('numero_unidad', isEqualTo: unidad)
-                  .limit(1)
-                  .get();
-          final placas =
-              unidadQuery.docs.isNotEmpty
-                  ? unidadQuery.docs.first.data()['placas'] as String
-                  : 'Desconocido';
-
-          await FirebaseFirestore.instance.collection('historial').add({
-            'chofer': nombreUsuario,
-            'unidad': unidad,
-            'placas': placas,
-            'fecha_inicio_sesion': Timestamp.now(),
-          });
-        }
-
-        // Guardar que ya aceptó los términos si no estaba registrado
+        // 🔹 Si no ha aceptado, mostrar diálogo con Aceptar/Cancelar
         if (!yaAcepto) {
+          final acepto = await _mostrarDialogoTerminos();
+          if (!acepto) {
+            await _mostrarDialogoDebeAceptar(); // ← ahora es un AlertDialog con botón Cerrar
+            _usuarioCorreoController.clear();
+            _passwordController.clear();
+            setState(() => _cargando = false);
+            return;
+          }
+
+          // ✅ Si aceptó, marcar en Firestore
           await _usuarioEncontrado!.reference.update({
-            'terminos_aceptados': true,
+            "terminos_aceptados": true,
           });
         }
-        // Guardar datos en SharedPreferences
+
+        // 🔹 Guardar datos en SharedPreferences
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString("nombre", data['nombre'] ?? 'Usuario');
         await prefs.setString(
@@ -122,8 +156,10 @@ class _LoginScreenState extends State<LoginScreen> {
         );
         await prefs.setString("correo", data['email'] ?? '');
         await prefs.setString("rol", rol ?? '');
+        await prefs.setString("uid", _usuarioEncontrado!.id);
+        await prefs.setString("usuarioId", _usuarioEncontrado!.id);
+        await prefs.setBool("logueado", true); // ← útil para tu main
 
-        // Si es chofer guardamos su tipo de operador (si existe en Firestore)
         if (rol == 'chofer') {
           await prefs.setString(
             "tipo_operador",
@@ -131,44 +167,30 @@ class _LoginScreenState extends State<LoginScreen> {
           );
         }
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => PantallaPrincipal(rol: rol ?? '')),
-        );
+        // Navegar al menú principal
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => PantallaPrincipal(rol: rol ?? ''),
+            ),
+          );
+        }
       } else {
-        _mostrarMensaje('Contraseña incorrecta');
+        _mostrarMensaje("Contraseña incorrecta");
       }
     } catch (e) {
+      // ignore: avoid_print
       print('Error en login: $e');
       _mostrarMensaje('Error al iniciar sesión');
     }
 
-    setState(() => _cargando = false);
+    if (mounted) setState(() => _cargando = false);
   }
 
+  // Botón "Ver Términos y Condiciones" (solo informativo, no guarda nada)
   void _mostrarTerminos() {
-    showDialog(
-      context: context,
-      builder:
-          (_) => AlertDialog(
-            title: const Text('Términos y Condiciones'),
-            content: const SingleChildScrollView(
-              child: Text(
-                'Al usar esta aplicación, aceptas que:\n\n'
-                '- La app podrá acceder a tu ubicación para mejorar el servicio.\n'
-                '- Podrá acceder a tus archivos para almacenar tickets de viaje.\n'
-                '- El uso indebido puede resultar en suspensión de tu cuenta.\n'
-                '- Tus datos estarán sujetos a la política de privacidad.\n',
-              ),
-            ),
-            actions: [
-              TextButton(
-                child: const Text('Cerrar'),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
-          ),
-    );
+    _mostrarDialogoTerminos(); // reutilizamos el mismo diálogo con Aceptar/Cancelar
   }
 
   @override
@@ -218,41 +240,14 @@ class _LoginScreenState extends State<LoginScreen> {
                             ? Icons.visibility
                             : Icons.visibility_off,
                       ),
-                      onPressed: () {
-                        setState(
-                          () => _mostrarContrasena = !_mostrarContrasena,
-                        );
-                      },
+                      onPressed:
+                          () => setState(
+                            () => _mostrarContrasena = !_mostrarContrasena,
+                          ),
                     ),
                     border: const OutlineInputBorder(),
                   ),
                 ),
-                const SizedBox(height: 10),
-                if (_mostrarCheckbox)
-                  Column(
-                    children: [
-                      Row(
-                        children: [
-                          Checkbox(
-                            value: _aceptoTerminos,
-                            onChanged: (val) {
-                              setState(() => _aceptoTerminos = val ?? false);
-                            },
-                          ),
-                          const Expanded(
-                            child: Text('Acepto Términos & Condiciones'),
-                          ),
-                        ],
-                      ),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: TextButton(
-                          onPressed: _mostrarTerminos,
-                          child: const Text('Ver Términos y Condiciones'),
-                        ),
-                      ),
-                    ],
-                  ),
                 const SizedBox(height: 10),
                 SizedBox(
                   width: double.infinity,
@@ -266,6 +261,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       'Iniciar sesión',
                       style: TextStyle(color: Colors.white),
                     ),
+                  ),
+                ),
+                // 👇 Ver Términos (informativo)
+                TextButton(
+                  onPressed: _mostrarTerminos,
+                  child: const Text(
+                    'Ver Términos y Condiciones',
+                    style: TextStyle(color: Colors.purple),
                   ),
                 ),
               ],

@@ -4,7 +4,6 @@ import 'widgets/drawer.dart';
 import 'widgets/bottom_menu.dart';
 import '../providers/configuracion_provider.dart';
 
-// Pantalla Principal
 class PantallaPrincipal extends StatelessWidget {
   final String rol;
 
@@ -15,10 +14,8 @@ class PantallaPrincipal extends StatelessWidget {
     final config = Provider.of<ConfiguracionProvider>(context);
 
     return Scaffold(
-      // ✅ El fondo ahora depende del tema
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
 
-      // APPBAR
       appBar: AppBar(
         title: const Text('Menú Principal'),
         centerTitle: true,
@@ -26,42 +23,34 @@ class PantallaPrincipal extends StatelessWidget {
         foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
       ),
 
-      // DASHBOARD (Drawer)
       drawer: const DashboardDrawer(),
 
-      // CUERPO PRINCIPAL
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Imagen logo
             Image.asset(
               Theme.of(context).brightness == Brightness.dark
-                  ? 'assets/img/usublanco.png' // 🌙 modo oscuro
-                  : 'assets/img/usu.png', // ☀️ modo claro
+                  ? 'assets/img/usublanco.png'
+                  : 'assets/img/usu.png',
               width: 235,
               height: 125,
               fit: BoxFit.contain,
             ),
             const SizedBox(height: 10),
 
-            // ✅ Texto bienvenida adaptado al tema
             Text(
               'BIENVENIDO A\nLA APP DE USU',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontStyle: FontStyle.italic,
                 fontWeight: FontWeight.bold,
-                fontSize: config.fontSize, // 🔎 Usa tamaño dinámico
-                color:
-                    Theme.of(
-                      context,
-                    ).textTheme.bodyLarge?.color, // ✅ Color según tema
+                fontSize: config.fontSize,
+                color: Theme.of(context).textTheme.bodyLarge?.color,
               ),
             ),
             const SizedBox(height: 20),
 
-            // Grid dinámico
             Expanded(
               child: GridView.count(
                 crossAxisCount: 2,
@@ -74,12 +63,10 @@ class PantallaPrincipal extends StatelessWidget {
         ),
       ),
 
-      // MENU DE ABAJO
       bottomNavigationBar: BottomMenu(rol: rol),
     );
   }
 
-  // Filtrar opciones por rol
   List<Widget> _getOpcionesPorRol(BuildContext context) {
     switch (rol) {
       case 'admin':
@@ -96,6 +83,7 @@ class PantallaPrincipal extends StatelessWidget {
             'Unidades de Transporte',
             '/unidades_transporte',
           ),
+          // ✅ Ahora Monitoreo GPS abre la lista de choferes
           _adminCard(context, Icons.map, 'Monitoreo GPS', '/monitoreo_gps'),
           _adminCard(
             context,
@@ -138,7 +126,6 @@ class PantallaPrincipal extends StatelessWidget {
     }
   }
 
-  // Widget tarjeta de botón
   Widget _adminCard(
     BuildContext context,
     IconData icon,

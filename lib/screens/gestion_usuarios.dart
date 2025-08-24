@@ -5,6 +5,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
+import 'package:usutlax/widgets/drawer.dart';
 
 class GestionUsuariosScreen extends StatefulWidget {
   final String rol; // <-- agregar esta propiedad
@@ -426,20 +427,39 @@ class _GestionUsuariosScreenState extends State<GestionUsuariosScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        iconTheme:
-            Theme.of(context).appBarTheme.iconTheme, // usa colores del tema
+        // 🔹 Título dinámico con tu lógica
         title: Text(
           _modoFormulario
               ? (_modoEdicion ? 'Editar Chofer' : 'Añadir Chofer')
               : 'Gestión de Choferes',
           style: const TextStyle(
             fontWeight: FontWeight.bold,
-            fontFamily: 'Times New Roman', // 👈 se mantiene tu tipografía
+            fontFamily: 'Times New Roman',
             fontSize: 20,
           ),
         ),
-        // ❌ quitamos backgroundColor: Colors.black
+        centerTitle: true,
+
+        // 🔙 Flecha de regreso a la izquierda
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_rounded),
+          onPressed: () => Navigator.pop(context),
+        ),
+
+        // ☰ Menú a la derecha → abre el Drawer
+        actions: [
+          Builder(
+            builder:
+                (context) => IconButton(
+                  icon: const Icon(Icons.menu),
+                  onPressed: () => Scaffold.of(context).openDrawer(),
+                ),
+          ),
+        ],
       ),
+
+      // 👇 Drawer integrado
+      drawer: const DashboardDrawer(),
       body:
           _modoFormulario
               ? SingleChildScrollView(

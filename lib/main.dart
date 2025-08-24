@@ -4,7 +4,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:usutlax/screens/configuracion_screen.dart';
 import 'package:usutlax/screens/gestion_usuarios.dart';
 import 'package:usutlax/screens/gestion_de_unidades.dart';
+import 'package:usutlax/screens/lista_choferes.dart';
 import 'package:usutlax/screens/login_screen.dart';
+import 'package:usutlax/screens/perfil_screen.dart'; // 👈 Import del perfil
 import 'firebase_options.dart';
 import 'main_menu.dart';
 import 'package:provider/provider.dart';
@@ -54,7 +56,7 @@ class MiApp extends StatelessWidget {
           title: 'Urbanos y Suburbanos de Tlaxcala S.A. de C.V.',
           debugShowCheckedModeBanner: false,
 
-          // 🌍 Localización (AQUÍ VA)
+          // 🌍 Localización
           localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
@@ -64,10 +66,8 @@ class MiApp extends StatelessWidget {
             Locale('es', 'ES'), // Español
             Locale('en', 'US'), // Inglés (opcional)
           ],
-          locale: const Locale(
-            'es',
-            'ES',
-          ), // 👉 fuerza español (si quieres usar el idioma del sistema, borra esta línea)
+          locale: const Locale('es', 'ES'),
+
           // 🔹 Tema claro
           theme: ThemeData(
             brightness: Brightness.light,
@@ -131,6 +131,10 @@ class MiApp extends StatelessWidget {
             '/mapa_choferes':
                 (context) => const PlaceholderScreen('Mapa Choferes'),
             '/configuracion': (context) => const ConfiguracionScreen(),
+            '/perfil': (context) => const PerfilScreen(),
+
+            // 👇 Nueva ruta Monitoreo GPS
+            '/monitoreo_gps': (context) => const ListaChoferesScreen(),
           },
         );
       },

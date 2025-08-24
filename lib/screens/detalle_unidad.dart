@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'package:usutlax/widgets/drawer.dart' show DashboardDrawer;
+
+import '../providers/configuracion_provider.dart';
 
 class DetalleUnidadScreen extends StatefulWidget {
   final String unidad;
@@ -21,18 +25,50 @@ class _DetalleUnidadScreenState extends State<DetalleUnidadScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final config = Provider.of<ConfiguracionProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
         centerTitle: true, // 👈 centramos el título
         title: Text(
           'UNIDAD ${widget.unidad}',
-          style: const TextStyle(
-            fontFamily: 'Times New Roman', // tipografía personalizada
+          style: TextStyle(
+            fontFamily: 'Times New Roman',
             fontWeight: FontWeight.bold,
             fontSize: 20,
+            color: config.modoOscuro ? Colors.white : Colors.black,
           ),
         ),
+        backgroundColor: config.modoOscuro ? Colors.black87 : Colors.white,
+
+        // 🔙 Flecha de regresar
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back_ios_rounded,
+            color: config.modoOscuro ? Colors.white : Colors.black,
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
+
+        // ☰ Menú que abre el Drawer
+        actions: [
+          Builder(
+            builder:
+                (ctx) => IconButton(
+                  icon: Icon(
+                    Icons.menu,
+                    color: config.modoOscuro ? Colors.white : Colors.black,
+                  ),
+                  onPressed:
+                      () => Scaffold.of(ctx).openDrawer(), // 👈 abre el drawer
+                ),
+          ),
+        ],
       ),
+
+      // 👇 Drawer conectado
+      drawer: const DashboardDrawer(),
+
       body: Column(
         children: [
           Padding(
