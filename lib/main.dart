@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:usutlax/screens/chat_users_screen.dart';
 import 'package:usutlax/screens/configuracion_screen.dart';
 import 'package:usutlax/screens/gestion_usuarios.dart';
 import 'package:usutlax/screens/gestion_de_unidades.dart';
 import 'package:usutlax/screens/lista_choferes.dart';
 import 'package:usutlax/screens/login_screen.dart';
-import 'package:usutlax/screens/perfil_screen.dart'; // 👈 Import del perfil
 import 'firebase_options.dart';
 import 'main_menu.dart';
 import 'package:provider/provider.dart';
@@ -37,7 +37,6 @@ class MiApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 👇 obtenemos la configuración global desde Provider
     final config = Provider.of<ConfiguracionProvider>(context);
 
     return FutureBuilder<Map<String, dynamic>>(
@@ -53,7 +52,7 @@ class MiApp extends StatelessWidget {
         final rol = snapshot.data!['rol'] as String;
 
         return MaterialApp(
-          title: 'Urbanos y Suburbanos de Tlaxcala S.A. de C.V.',
+          title: 'Urbanos y Sub Urbanos de Tlaxcala S.A. de C.V.',
           debugShowCheckedModeBanner: false,
 
           // 🌍 Localización
@@ -62,10 +61,7 @@ class MiApp extends StatelessWidget {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          supportedLocales: const [
-            Locale('es', 'ES'), // Español
-            Locale('en', 'US'), // Inglés (opcional)
-          ],
+          supportedLocales: const [Locale('es', 'ES'), Locale('en', 'US')],
           locale: const Locale('es', 'ES'),
 
           // 🔹 Tema claro
@@ -112,29 +108,68 @@ class MiApp extends StatelessWidget {
             ),
           ),
 
-          // 🔹 Aquí aplicamos lo que diga el Provider
+          // 🔹 Aplica configuración
           themeMode: config.modoOscuro ? ThemeMode.dark : ThemeMode.light,
 
           // 🔹 Pantalla inicial según sesión
           home: logueado ? PantallaPrincipal(rol: rol) : const LoginScreen(),
 
-          routes: {
-            '/login': (context) => const LoginScreen(),
-            '/menu_principal': (context) => PantallaPrincipal(rol: rol),
-            '/gestion_chofer': (context) => GestionUsuariosScreen(rol: rol),
-            '/unidades_transporte':
-                (context) => GestionDeUnidadesScreen(rol: rol),
-            '/crear_despachador':
-                (context) => const PlaceholderScreen('Crear Despachador'),
-            '/ver_rutas': (context) => const PlaceholderScreen('Ver Rutas'),
-            '/mensajes': (context) => const PlaceholderScreen('Mensajes'),
-            '/mapa_choferes':
-                (context) => const PlaceholderScreen('Mapa Choferes'),
-            '/configuracion': (context) => const ConfiguracionScreen(),
-            '/perfil': (context) => const PerfilScreen(),
+          // 🔹 Definición de rutas
+          onGenerateRoute: (settings) {
+            switch (settings.name) {
+              case '/login':
+                return MaterialPageRoute(builder: (_) => const LoginScreen());
+              case '/menu_principal':
+                return MaterialPageRoute(
+                  builder: (_) => PantallaPrincipal(rol: rol),
+                );
+              case '/gestion_chofer':
+                return MaterialPageRoute(
+                  builder: (_) => GestionUsuariosScreen(rol: rol),
+                );
+              case '/unidades_transporte':
+                return MaterialPageRoute(
+                  builder: (_) => GestionDeUnidadesScreen(rol: rol),
+                );
+              case '/crear_despachador':
+                return MaterialPageRoute(
+                  builder: (_) => const PlaceholderScreen('Crear Despachador'),
+                );
+              case '/ver_rutas':
+                return MaterialPageRoute(
+                  builder: (_) => const PlaceholderScreen('Ver Rutas'),
+                );
+              case '/mensajes':
+                return MaterialPageRoute(
+                  builder:
+                      (_) => FutureBuilder<String?>(
+                        future: SharedPreferences.getInstance().then(
+                          (prefs) => prefs.getString("usuarioId"),
+                        ),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData) {
+                            return const Scaffold(
+                              body: Center(child: CircularProgressIndicator()),
+                            );
+                          }
+                          return ChatUsersScreen(currentUserId: snapshot.data!);
+                        },
+                      ),
+                );
 
-            // 👇 Nueva ruta Monitoreo GPS
-            '/monitoreo_gps': (context) => const ListaChoferesScreen(),
+              case '/monitoreo_gps':
+                return MaterialPageRoute(
+                  builder: (_) => const ListaChoferesScreen(),
+                );
+              case '/configuracion':
+                return MaterialPageRoute(
+                  builder: (_) => const ConfiguracionScreen(),
+                );
+              default:
+                return MaterialPageRoute(
+                  builder: (_) => const PlaceholderScreen('No encontrada'),
+                );
+            }
           },
         );
       },

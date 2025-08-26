@@ -5,6 +5,7 @@ class ConfiguracionProvider extends ChangeNotifier {
   bool _modoOscuro = false;
   String _tamanoTexto = "Mediano";
   double _tamanoTextoPx = 16.0;
+  bool _formato24hrs = true; // 👈 nuevo: formato de hora
 
   // ============================
   // Getters
@@ -12,6 +13,7 @@ class ConfiguracionProvider extends ChangeNotifier {
   bool get modoOscuro => _modoOscuro;
   String get tamanoTexto => _tamanoTexto;
   double get tamanoTextoPx => _tamanoTextoPx;
+  bool get formato24hrs => _formato24hrs;
 
   // Getter auxiliar: devuelve texto según px
   String get tamanoTextoEtiqueta {
@@ -25,6 +27,11 @@ class ConfiguracionProvider extends ChangeNotifier {
   // ============================
   void toggleModoOscuro(bool value) {
     _modoOscuro = value;
+    notifyListeners();
+  }
+
+  void toggleFormatoHora(bool value) {
+    _formato24hrs = value;
     notifyListeners();
   }
 
@@ -46,7 +53,7 @@ class ConfiguracionProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Nuevo: cambia px directamente
+  // Nuevo: cambia px directamente (ahora de 1 a 30)
   void cambiarTamanoTextoPx(double value) {
     _tamanoTextoPx = value;
 
@@ -65,14 +72,5 @@ class ConfiguracionProvider extends ChangeNotifier {
   // ============================
   // Ajustar tamaño real de fuente
   // ============================
-  double get fontSize {
-    switch (_tamanoTexto) {
-      case "Pequeño":
-        return 14;
-      case "Grande":
-        return 20;
-      default:
-        return 16;
-    }
-  }
+  double get fontSize => _tamanoTextoPx;
 }

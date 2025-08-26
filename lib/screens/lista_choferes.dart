@@ -44,7 +44,7 @@ class ListaChoferesScreen extends StatelessWidget {
                       Text("Usuario: ${chofer['nombre_de_usuario']}"),
                       Text("Teléfono: ${chofer['telefono']}"),
                       Text("Unidad: ${chofer['unidad']}"),
-                      Text("Tipo operador: ${chofer['tipo de operador']}"),
+                      Text("Tipo: ${chofer['tipo de operador']}"),
                     ],
                   ),
                   trailing: IconButton(
@@ -58,7 +58,7 @@ class ListaChoferesScreen extends StatelessWidget {
                                 choferId: chofer.id,
                                 nombre: chofer['nombre'],
                                 correo:
-                                    chofer['nombre_de_usuario'], // 👈 uso el username
+                                    chofer['nombre_de_usuario'], // 👈 puse el username
                                 telefono: chofer['telefono'],
                               ),
                         ),

@@ -1,60 +1,44 @@
 import 'package:flutter/material.dart';
 
-class BottomMenu extends StatelessWidget {
-  final String rol;
+class BottomMenu extends StatefulWidget {
+  final String? rol; // opcional
 
-  const BottomMenu({super.key, required this.rol});
+  const BottomMenu({super.key, this.rol});
+
+  @override
+  State<BottomMenu> createState() => _BottomMenuState();
+}
+
+class _BottomMenuState extends State<BottomMenu> {
+  int _selectedIndex = 2; // inicio seleccionado por defecto
 
   @override
   Widget build(BuildContext context) {
-    List<BottomNavigationBarItem> items;
-
-    switch (rol) {
-      case 'admin':
-        items = const [
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Mi perfil'),
-          BottomNavigationBarItem(icon: Icon(Icons.message), label: 'Mensajes'),
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Inicio'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications),
-            label: 'Notificaciones',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: 'Configuración',
-          ),
-        ];
-        break;
-      case 'despachador':
-        items = const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Inicio'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: 'Configuración',
-          ),
-        ];
-        break;
-      case 'chofer':
-        items = const [
-          BottomNavigationBarItem(icon: Icon(Icons.message), label: 'Mensajes'),
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Inicio'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: 'Configuración',
-          ),
-        ];
-        break;
-      default:
-        items = const [];
-    }
+    List<BottomNavigationBarItem> items = const [
+      BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Mi perfil'),
+      BottomNavigationBarItem(icon: Icon(Icons.message), label: 'Mensajes'),
+      BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Inicio'),
+      BottomNavigationBarItem(
+        icon: Icon(Icons.notifications),
+        label: 'Notificaciones',
+      ),
+      BottomNavigationBarItem(
+        icon: Icon(Icons.settings),
+        label: 'Configuración',
+      ),
+    ];
 
     return BottomNavigationBar(
       type: BottomNavigationBarType.fixed,
-      selectedItemColor: const Color.fromARGB(127, 126, 85, 223),
+      selectedItemColor: const Color.fromRGBO(15, 21, 255, 1), // azul
       unselectedItemColor: Colors.grey,
-      currentIndex: items.length > 1 ? 1 : 0,
+      currentIndex: _selectedIndex,
+      selectedFontSize: 12, // tamaño fijo para evitar que se corte
+      unselectedFontSize: 12,
       onTap: (index) {
-        // Aquí puedes agregar navegación si lo deseas
+        setState(() {
+          _selectedIndex = index;
+        });
       },
       items: items,
     );

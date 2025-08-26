@@ -55,7 +55,7 @@ class ConfiguracionScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         children: [
           Text(
-            "ACCOUNT",
+            "Cuenta",
             style: TextStyle(
               fontWeight: FontWeight.bold,
               color: config.modoOscuro ? Colors.white70 : Colors.grey,
@@ -82,7 +82,7 @@ class ConfiguracionScreen extends StatelessWidget {
           const SizedBox(height: 20),
 
           const Text(
-            "APPEARANCE",
+            "Apariencia",
             style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
           ),
 
@@ -113,6 +113,19 @@ class ConfiguracionScreen extends StatelessWidget {
             "OTROS AJUSTES",
             style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
           ),
+
+          // ✅ Nuevo switch formato de hora
+          ListTile(
+            leading: const Icon(Icons.access_time),
+            title: const Text("Formato de hora (24h / 12h)"),
+            trailing: Switch(
+              value: config.formato24hrs,
+              onChanged: (value) {
+                config.toggleFormatoHora(value);
+              },
+            ),
+          ),
+
           ListTile(
             leading: const Icon(Icons.lock_outline),
             title: const Text("Avisos de Privacidad"),
@@ -158,7 +171,6 @@ class ConfiguracionScreen extends StatelessWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setState) {
@@ -182,7 +194,7 @@ class ConfiguracionScreen extends StatelessWidget {
                     value: tempSize,
                     min: 12,
                     max: 30,
-                    divisions: 6,
+                    divisions: 18,
                     label: "${tempSize.toInt()}",
                     activeColor: const Color.fromARGB(255, 25, 0, 255),
                     onChanged: (value) {

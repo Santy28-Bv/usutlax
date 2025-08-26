@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class MapaChoferScreen extends StatefulWidget {
@@ -8,12 +7,18 @@ class MapaChoferScreen extends StatefulWidget {
   final String correo;
   final String telefono;
 
+  // 👉 Puedes pasar la ubicación inicial desde afuera si quieres
+  final double? lat;
+  final double? lng;
+
   const MapaChoferScreen({
     super.key,
     required this.choferId,
     required this.nombre,
     required this.correo,
     required this.telefono,
+    this.lat,
+    this.lng,
   });
 
   @override
@@ -21,8 +26,18 @@ class MapaChoferScreen extends StatefulWidget {
 }
 
 class _MapaChoferScreenState extends State<MapaChoferScreen> {
-  LatLng? ubicacionChofer;
   GoogleMapController? mapController;
+  LatLng? ubicacionChofer;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // ✅ Si pasaste coordenadas al abrir la pantalla, las usamos
+    if (widget.lat != null && widget.lng != null) {
+      ubicacionChofer = LatLng(widget.lat!, widget.lng!);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,43 +60,9 @@ class _MapaChoferScreenState extends State<MapaChoferScreen> {
             ),
           ),
           Expanded(
-            child: StreamBuilder<DocumentSnapshot>(
-              stream:
-                  FirebaseFirestore.instance
-                      .collection("gestion_usuarios")
-                      .doc(widget.choferId)
-                      .collection("ubicaciones")
-                      .doc("actual") // 👈 aquí guardas la última ubicación
-                      .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return const Center(
-                    child: Text("Error al obtener la ubicación"),
-                  );
-                }
-
-                if (!snapshot.hasData || !snapshot.data!.exists) {
-                  return const Center(
-                    child: Text("Esperando ubicación del chofer..."),
-                  );
-                }
-
-                final data = snapshot.data!.data() as Map<String, dynamic>;
-                if (data.containsKey("lat") && data.containsKey("lng")) {
-                  final lat = (data["lat"] as num).toDouble();
-                  final lng = (data["lng"] as num).toDouble();
-                  ubicacionChofer = LatLng(lat, lng);
-
-                  // Mover cámara cuando cambie
-                  if (mapController != null) {
-                    mapController!.animateCamera(
-                      CameraUpdate.newLatLng(ubicacionChofer!),
-                    );
-                  }
-                }
-
-                return ubicacionChofer == null
-                    ? const Center(child: Text("Esperando ubicación..."))
+            child:
+                ubicacionChofer == null
+                    ? const Center(child: Text("No hay ubicación disponible"))
                     : GoogleMap(
                       initialCameraPosition: CameraPosition(
                         target: ubicacionChofer!,
@@ -95,9 +76,7 @@ class _MapaChoferScreenState extends State<MapaChoferScreen> {
                           infoWindow: InfoWindow(title: widget.nombre),
                         ),
                       },
-                    );
-              },
-            ),
+                    ),
           ),
           Padding(
             padding: const EdgeInsets.all(8),
