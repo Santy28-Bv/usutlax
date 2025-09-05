@@ -14,7 +14,7 @@ class DashboardDrawer extends StatefulWidget {
 
 class _DashboardDrawerState extends State<DashboardDrawer> {
   String _nombre = "Usuario";
-  String _username = "username";
+  String _nombreDeUsuario = "username";
   String? _correo;
   String? _tipoOperador;
   String _rol = "invitado";
@@ -41,14 +41,14 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
         if (doc.exists) {
           final data = doc.data()!;
           _nombre = data["nombre"] ?? "Usuario";
-          _username = data["username"] ?? "username";
+          _nombreDeUsuario = data["nombre_de_usuario"] ?? "username";
           _correo = data["correo"];
-          _tipoOperador = data["tipo_operador"];
+          _tipoOperador = data["tipo de operador"];
           _rol = data["rol"] ?? "invitado";
           _fotoUrl = data["fotoUrl"];
 
           await prefs.setString("nombre", _nombre);
-          await prefs.setString("username", _username);
+          await prefs.setString("nombre_de_usuario", _nombreDeUsuario);
           if (_correo != null) await prefs.setString("correo", _correo!);
           if (_tipoOperador != null) {
             await prefs.setString("tipo_operador", _tipoOperador!);
@@ -61,7 +61,7 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
       }
     } else {
       _nombre = prefs.getString("nombre") ?? "Usuario";
-      _username = prefs.getString("username") ?? "username";
+      _nombreDeUsuario = prefs.getString("nombre_de_usuario") ?? "username";
       _correo = prefs.getString("correo");
       _tipoOperador = prefs.getString("tipo_operador");
       _rol = prefs.getString("rol") ?? "invitado";
@@ -74,7 +74,6 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
   Future<void> _cambiarFoto() async {
     final picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-
     if (image == null) return;
 
     try {
@@ -155,7 +154,7 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
                             _rol.toLowerCase() == "chofer"
                                 ? (_tipoOperador != null &&
                                         _tipoOperador!.trim().isNotEmpty
-                                    ? "Chofer (${_tipoOperador!.trim()})"
+                                    ? "Chofer: ${_tipoOperador!.trim()}"
                                     : "Chofer")
                                 : _rol,
                             style: const TextStyle(
@@ -187,7 +186,7 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 Text(
-                  "@$_username",
+                  "@$_nombreDeUsuario",
                   style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 13,
