@@ -45,9 +45,9 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Text(
                 "Al usar esta aplicación aceptas que:\n\n"
                 "- La app podrá acceder a tu ubicación para mejorar el servicio.\n"
-                "- Podrá acceder a tus archivos para almacenar tickets de viaje.\n"
-                "- El uso indebido puede resultar en suspensión de tu cuenta.\n"
-                "- Tus datos estarán sujetos a la política de privacidad.\n",
+                "- Podrá acceder a tus archivos para el uso de archivos multimendia.\n"
+                "- El uso indebido puede resultar en suspensión de tu cuenta por parte de los administradores.\n"
+                "- Tus datos estarán sujetos a la política de privacidad de la empresa \"Urbanos y Sub Urbanos de Tlaxcala S.A de C.V\".\n",
               ),
             ),
             actions: [

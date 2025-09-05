@@ -7,6 +7,7 @@ import 'package:usutlax/screens/gestion_usuarios.dart';
 import 'package:usutlax/screens/gestion_de_unidades.dart';
 import 'package:usutlax/screens/lista_choferes.dart';
 import 'package:usutlax/screens/login_screen.dart';
+import 'package:usutlax/screens/perfil_screen.dart'; // ✅ Import PerfilScreen
 import 'firebase_options.dart';
 import 'main_menu.dart';
 import 'package:provider/provider.dart';
@@ -27,11 +28,10 @@ void main() async {
 class MiApp extends StatelessWidget {
   const MiApp({super.key});
 
-  // ✅ Verifica si hay sesión y obtiene rol
   Future<Map<String, dynamic>> _verificarSesion() async {
     final prefs = await SharedPreferences.getInstance();
     final logueado = prefs.getBool('logueado') ?? false;
-    final rol = prefs.getString('rol') ?? ''; // Recuperar rol guardado
+    final rol = prefs.getString('rol') ?? '';
     return {'logueado': logueado, 'rol': rol};
   }
 
@@ -54,8 +54,6 @@ class MiApp extends StatelessWidget {
         return MaterialApp(
           title: 'Urbanos y Sub Urbanos de Tlaxcala S.A. de C.V.',
           debugShowCheckedModeBanner: false,
-
-          // 🌍 Localización
           localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
@@ -64,7 +62,6 @@ class MiApp extends StatelessWidget {
           supportedLocales: const [Locale('es', 'ES'), Locale('en', 'US')],
           locale: const Locale('es', 'ES'),
 
-          // 🔹 Tema claro
           theme: ThemeData(
             brightness: Brightness.light,
             scaffoldBackgroundColor: Colors.white,
@@ -85,8 +82,6 @@ class MiApp extends StatelessWidget {
               bodyLarge: TextStyle(fontSize: config.fontSize),
             ),
           ),
-
-          // 🔹 Tema oscuro
           darkTheme: ThemeData(
             brightness: Brightness.dark,
             scaffoldBackgroundColor: Colors.black,
@@ -107,14 +102,10 @@ class MiApp extends StatelessWidget {
               bodyLarge: TextStyle(fontSize: config.fontSize),
             ),
           ),
-
-          // 🔹 Aplica configuración
           themeMode: config.modoOscuro ? ThemeMode.dark : ThemeMode.light,
 
-          // 🔹 Pantalla inicial según sesión
           home: logueado ? PantallaPrincipal(rol: rol) : const LoginScreen(),
 
-          // 🔹 Definición de rutas
           onGenerateRoute: (settings) {
             switch (settings.name) {
               case '/login':
@@ -123,6 +114,8 @@ class MiApp extends StatelessWidget {
                 return MaterialPageRoute(
                   builder: (_) => PantallaPrincipal(rol: rol),
                 );
+              case '/perfil': // ✅ Ruta añadida para PerfilScreen
+                return MaterialPageRoute(builder: (_) => const PerfilScreen());
               case '/gestion_chofer':
                 return MaterialPageRoute(
                   builder: (_) => GestionUsuariosScreen(rol: rol),
@@ -156,7 +149,6 @@ class MiApp extends StatelessWidget {
                         },
                       ),
                 );
-
               case '/monitoreo_gps':
                 return MaterialPageRoute(
                   builder: (_) => const ListaChoferesScreen(),
@@ -179,7 +171,6 @@ class MiApp extends StatelessWidget {
 
 class PlaceholderScreen extends StatelessWidget {
   final String titulo;
-
   const PlaceholderScreen(this.titulo, {super.key});
 
   @override

@@ -35,6 +35,30 @@ class _ChatScreenState extends State<ChatScreen> {
         : "${widget.otherUserId}_${widget.currentUserId}";
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _marcarMensajesComoLeidos();
+  }
+
+  // ✅ Marca como leídos todos los mensajes recibidos al entrar al chat
+  void _marcarMensajesComoLeidos() async {
+    final chatId = getChatId();
+
+    final mensajesNoLeidos =
+        await FirebaseFirestore.instance
+            .collection("mensajes")
+            .doc(chatId)
+            .collection("chat")
+            .where("receptorId", isEqualTo: widget.currentUserId)
+            .where("estado", isNotEqualTo: "leido")
+            .get();
+
+    for (var doc in mensajesNoLeidos.docs) {
+      await doc.reference.update({"estado": "leido"});
+    }
+  }
+
   void _enviarMensaje() async {
     if (_controller.text.trim().isEmpty) return;
     final chatId = getChatId();
@@ -123,7 +147,6 @@ class _ChatScreenState extends State<ChatScreen> {
     _editController.clear();
   }
 
-  // ✅ Ahora vacía solo para mí (no borra mensajes de la otra persona)
   void _vaciarChat() async {
     final chatId = getChatId();
     final mensajes =
@@ -439,7 +462,6 @@ class _ChatScreenState extends State<ChatScreen> {
                                               ),
                                             ),
                                             const SizedBox(width: 4),
-                                            // ✅ Palomitas SOLO en mis mensajes
                                             if (esMio)
                                               _buildCheckMarks(
                                                 msg['estado'] ?? "enviado",

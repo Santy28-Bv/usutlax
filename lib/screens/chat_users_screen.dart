@@ -83,15 +83,6 @@ class _ChatUsersScreenState extends State<ChatUsersScreen> {
             );
           }
 
-          // 🔹 Ordenar: primero los que tienen mensajes sin leer
-          users.sort((a, b) {
-            final aData = a.data() as Map<String, dynamic>;
-            final bData = b.data() as Map<String, dynamic>;
-            final aUnread = aData['unread_${widget.currentUserId}'] ?? 0;
-            final bUnread = bData['unread_${widget.currentUserId}'] ?? 0;
-            return bUnread.compareTo(aUnread);
-          });
-
           return ListView.builder(
             itemCount: users.length,
             padding: const EdgeInsets.symmetric(vertical: 8),
@@ -102,7 +93,6 @@ class _ChatUsersScreenState extends State<ChatUsersScreen> {
               final nombre = user['nombre'] ?? "Usuario sin nombre";
               final rol = (user['rol'] ?? "").toLowerCase();
               final unidad = user['unidad'];
-              final unread = user['unread_${widget.currentUserId}'] ?? 0;
 
               // Subtítulo dinámico según rol
               String subtitulo = "";
@@ -116,82 +106,109 @@ class _ChatUsersScreenState extends State<ChatUsersScreen> {
                     "Despachadores de Urbanos y Sub Urbanos de Tlaxcala S.A. de C.V.";
               }
 
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                elevation: 2,
-                color: theme.cardColor,
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  leading: CircleAvatar(
-                    radius: 24,
-                    backgroundColor:
-                        isDark ? Colors.blueGrey : Colors.blueAccent,
-                    child: Text(
-                      nombre.isNotEmpty ? nombre[0].toUpperCase() : "?",
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  title: Text(
-                    nombre,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  subtitle: Text(
-                    subtitulo,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
-                    ),
-                  ),
-                  trailing:
-                      unread > 0
-                          ? Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: const BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Text(
-                              unread.toString(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          )
-                          : Icon(
-                            Icons.chat_bubble_outline,
-                            color: isDark ? Colors.white70 : Colors.blueGrey,
-                          ),
-                  onTap: () async {
-                    // 🔴 Resetear los mensajes sin leer al entrar al chat
-                    await FirebaseFirestore.instance
-                        .collection("gestion_usuarios")
-                        .doc(widget.currentUserId)
-                        .update({"unread_$userId": 0});
+              // 🔴 Stream de mensajes sin leer en tiempo real
+              return StreamBuilder<QuerySnapshot>(
+                stream:
+                    FirebaseFirestore.instance
+                        .collection("messages")
+                        .where(
+                          "senderId",
+                          isEqualTo: userId,
+                        ) // mensajes que me envió
+                        .where(
+                          "receiverId",
+                          isEqualTo: widget.currentUserId,
+                        ) // yo soy receptor
+                        .where("isRead", isEqualTo: false) // no leídos
+                        .snapshots(),
+                builder: (context, unreadSnapshot) {
+                  int unreadCount = unreadSnapshot.data?.docs.length ?? 0;
 
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder:
-                            (_) => ChatScreen(
-                              currentUserId: widget.currentUserId,
-                              otherUserId: userId,
-                              otherUserName: nombre,
-                            ),
+                  return Card(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    elevation: 2,
+                    color: theme.cardColor,
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
                       ),
-                    );
-                  },
-                ),
+                      leading: CircleAvatar(
+                        radius: 24,
+                        backgroundColor:
+                            isDark ? Colors.blueGrey : Colors.blueAccent,
+                        child: Text(
+                          nombre.isNotEmpty ? nombre[0].toUpperCase() : "?",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      title: Text(
+                        nombre,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      subtitle: Text(
+                        subtitulo,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.textTheme.bodySmall?.color?.withOpacity(
+                            0.7,
+                          ),
+                        ),
+                      ),
+                      trailing:
+                          unreadCount > 0
+                              ? Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: const BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Text(
+                                  unreadCount.toString(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              )
+                              : Icon(
+                                Icons.chat_bubble_outline,
+                                color:
+                                    isDark ? Colors.white70 : Colors.blueGrey,
+                              ),
+                      onTap: () async {
+                        // 👉 Al entrar al chat se marcan como leídos
+                        final batch = FirebaseFirestore.instance.batch();
+                        for (var doc in unreadSnapshot.data?.docs ?? []) {
+                          batch.update(doc.reference, {"isRead": true});
+                        }
+                        await batch.commit();
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (_) => ChatScreen(
+                                  currentUserId: widget.currentUserId,
+                                  otherUserId: userId,
+                                  otherUserName: nombre,
+                                ),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
               );
             },
           );

@@ -10,18 +10,14 @@ class BottomMenu extends StatefulWidget {
 }
 
 class _BottomMenuState extends State<BottomMenu> {
-  int _selectedIndex = 2; // inicio seleccionado por defecto
+  int _selectedIndex =
+      1; // Inicio seleccionado por defecto (ahora es el índice 1)
 
   @override
   Widget build(BuildContext context) {
     List<BottomNavigationBarItem> items = const [
       BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Mi perfil'),
-      BottomNavigationBarItem(icon: Icon(Icons.message), label: 'Mensajes'),
       BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Inicio'),
-      BottomNavigationBarItem(
-        icon: Icon(Icons.notifications),
-        label: 'Notificaciones',
-      ),
       BottomNavigationBarItem(
         icon: Icon(Icons.settings),
         label: 'Configuración',
@@ -33,7 +29,7 @@ class _BottomMenuState extends State<BottomMenu> {
       selectedItemColor: const Color.fromRGBO(15, 21, 255, 1), // azul
       unselectedItemColor: Colors.grey,
       currentIndex: _selectedIndex,
-      selectedFontSize: 12, // tamaño fijo para evitar que se corte
+      selectedFontSize: 12,
       unselectedFontSize: 12,
       onTap: (index) {
         setState(() {

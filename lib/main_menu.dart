@@ -17,10 +17,22 @@ class PantallaPrincipal extends StatelessWidget {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
 
       appBar: AppBar(
-        title: const Text('Menú Principal'),
-        centerTitle: true,
         backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
+        centerTitle: true,
+        title: LayoutBuilder(
+          builder: (context, constraints) {
+            return SizedBox(
+              width: constraints.maxWidth, // ocupa todo el ancho disponible
+              child: const Text(
+                'Menú Principal',
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.visible, // evita los "..."
+              ),
+            );
+          },
+        ),
+        actions: _getAppBarActions(context, rol),
       ),
 
       drawer: const DashboardDrawer(),
@@ -67,8 +79,57 @@ class PantallaPrincipal extends StatelessWidget {
     );
   }
 
+  /// 🔹 Acciones dinámicas en el AppBar
+  List<Widget> _getAppBarActions(BuildContext context, String rol) {
+    switch (rol.toLowerCase()) {
+      case 'admin':
+        return [
+          IconButton(
+            icon: const Icon(Icons.message),
+            onPressed: () => Navigator.pushNamed(context, '/mensajes'),
+          ),
+          IconButton(
+            icon: const Icon(Icons.map),
+            onPressed: () => Navigator.pushNamed(context, '/monitoreo_gps'),
+          ),
+          IconButton(
+            icon: const Icon(Icons.notifications),
+            onPressed: () {}, // 🚧 notificaciones pendiente
+          ),
+        ];
+
+      case 'despachador':
+        return [
+          IconButton(
+            icon: const Icon(Icons.map),
+            onPressed: () => Navigator.pushNamed(context, '/ver_rutas'),
+          ),
+          IconButton(
+            icon: const Icon(Icons.gps_fixed),
+            onPressed: () => Navigator.pushNamed(context, '/monitoreo_gps'),
+          ),
+        ];
+
+      case 'chofer':
+        return [
+          IconButton(
+            icon: const Icon(Icons.message),
+            onPressed: () => Navigator.pushNamed(context, '/mensajes'),
+          ),
+          IconButton(
+            icon: const Icon(Icons.qr_code),
+            onPressed: () => Navigator.pushNamed(context, '/qr'),
+          ),
+        ];
+
+      default:
+        return [];
+    }
+  }
+
+  /// 🔹 Opciones en el grid central
   List<Widget> _getOpcionesPorRol(BuildContext context) {
-    switch (rol) {
+    switch (rol.toLowerCase()) {
       case 'admin':
         return [
           _adminCard(
@@ -83,7 +144,6 @@ class PantallaPrincipal extends StatelessWidget {
             'Unidades de Transporte',
             '/unidades_transporte',
           ),
-          // ✅ Ahora Monitoreo GPS abre la lista de choferes
           _adminCard(context, Icons.map, 'Monitoreo GPS', '/monitoreo_gps'),
           _adminCard(
             context,
@@ -99,8 +159,9 @@ class PantallaPrincipal extends StatelessWidget {
             context,
             Icons.person_add,
             'Añadir Choferes',
-            '/anadir_chofer',
+            '/gestion_chofer',
           ),
+          _adminCard(context, Icons.map, 'Ver Rutas', '/ver_rutas'),
           _adminCard(
             context,
             Icons.settings,
@@ -111,7 +172,7 @@ class PantallaPrincipal extends StatelessWidget {
 
       case 'chofer':
         return [
-          _adminCard(context, Icons.qr_code, 'QR', '/qr'),
+          _adminCard(context, Icons.qr_code, 'Escanear QR', '/qr'),
           _adminCard(context, Icons.message, 'Mensajes', '/mensajes'),
           _adminCard(
             context,

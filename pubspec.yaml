@@ -25,8 +25,6 @@ dependencies:
   image_picker: ^1.1.2
   firebase_database: ^11.3.9
   google_maps_flutter: ^2.9.0
-  geolocator: ^11.0.0
-  location: ^6.0.1
   emoji_picker_flutter: ^4.3.0
 
   

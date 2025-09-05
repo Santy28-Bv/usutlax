@@ -18,7 +18,7 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
   String? _correo;
   String? _tipoOperador;
   String _rol = "invitado";
-  String? _fotoUrl; // ✅ Foto de perfil
+  String? _fotoUrl;
 
   @override
   void initState() {
@@ -47,7 +47,6 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
           _rol = data["rol"] ?? "invitado";
           _fotoUrl = data["fotoUrl"];
 
-          // 🔹 Guardamos en cache local
           await prefs.setString("nombre", _nombre);
           await prefs.setString("username", _username);
           if (_correo != null) await prefs.setString("correo", _correo!);
@@ -61,7 +60,6 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
         debugPrint("❌ Error al cargar Firestore: $e");
       }
     } else {
-      // Si no hay usuarioId cargamos lo que haya en cache
       _nombre = prefs.getString("nombre") ?? "Usuario";
       _username = prefs.getString("username") ?? "username";
       _correo = prefs.getString("correo");
@@ -82,21 +80,17 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString("usuarioId");
-
       if (userId == null) return;
 
-      // Subimos la foto a Firebase Storage
       final ref = FirebaseStorage.instance.ref().child("usuarios/$userId.jpg");
       await ref.putFile(File(image.path));
       final url = await ref.getDownloadURL();
 
-      // Guardamos en Firestore
       await FirebaseFirestore.instance
           .collection("gestion_usuarios")
           .doc(userId)
           .update({"fotoUrl": url});
 
-      // Guardamos en SharedPreferences
       await prefs.setString("fotoUrl", url);
 
       setState(() => _fotoUrl = url);
@@ -116,69 +110,76 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
     return Drawer(
       child: Column(
         children: [
-          // 🔹 HEADER
-          UserAccountsDrawerHeader(
-            decoration: const BoxDecoration(
-              color: Color.fromARGB(255, 76, 0, 255),
-            ),
-            currentAccountPicture: GestureDetector(
-              onTap: _cambiarFoto, // 📸 Cambiar desde el drawer
-              child: CircleAvatar(
-                backgroundColor: Colors.white,
-                backgroundImage:
-                    _fotoUrl != null ? NetworkImage(_fotoUrl!) : null,
-                child:
-                    _fotoUrl == null
-                        ? const Icon(
-                          Icons.person,
-                          size: 40,
-                          color: Colors.purple,
-                        )
-                        : null,
-              ),
-            ),
-            accountName: Padding(
-              padding: const EdgeInsets.only(top: 24),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      _nombre,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                        color: Colors.white,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black45,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      _rol.toLowerCase() == "chofer"
-                          ? (_tipoOperador != null &&
-                                  _tipoOperador!.trim().isNotEmpty
-                              ? "Chofer (${_tipoOperador!.trim()})"
-                              : "Chofer")
-                          : _rol,
-                      style: const TextStyle(fontSize: 12, color: Colors.white),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            accountEmail: Column(
+          // 🔹 HEADER PERSONALIZADO
+          Container(
+            color: const Color.fromARGB(255, 76, 0, 255),
+            padding: const EdgeInsets.fromLTRB(16, 40, 16, 16),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    GestureDetector(
+                      onTap: _cambiarFoto,
+                      child: CircleAvatar(
+                        radius: 30,
+                        backgroundColor: Colors.white,
+                        backgroundImage:
+                            _fotoUrl != null ? NetworkImage(_fotoUrl!) : null,
+                        child:
+                            _fotoUrl == null
+                                ? const Icon(
+                                  Icons.person,
+                                  size: 40,
+                                  color: Colors.purple,
+                                )
+                                : null,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Container(
+                        alignment: Alignment.centerLeft,
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black45,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            _rol.toLowerCase() == "chofer"
+                                ? (_tipoOperador != null &&
+                                        _tipoOperador!.trim().isNotEmpty
+                                    ? "Chofer (${_tipoOperador!.trim()})"
+                                    : "Chofer")
+                                : _rol,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _nombre,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    color: Colors.white,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
                 if (_correo != null && _correo!.isNotEmpty)
                   Text(
                     _correo!,
@@ -242,7 +243,11 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
             "Mi perfil",
             () => Navigator.pushNamed(context, '/perfil'),
           ),
-          _item(Icons.gps_fixed, "Monitoreo GPS", () {}),
+          _item(
+            Icons.gps_fixed,
+            "Monitoreo GPS",
+            () => Navigator.pushNamed(context, '/monitoreo_gps'),
+          ),
           _item(
             Icons.message,
             "Mensajes",
@@ -255,12 +260,26 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
             () => Navigator.pushNamed(context, '/gestion_chofer'),
           ),
           _item(
+            Icons.directions_bus,
+            "Gestión de Unidades",
+            () => Navigator.pushNamed(context, '/unidades_transporte'),
+          ),
+          _item(
+            Icons.person_add,
+            "Crear Despachador",
+            () => Navigator.pushNamed(context, '/crear_despachador'),
+          ),
+          _item(
+            Icons.map,
+            "Ver Rutas",
+            () => Navigator.pushNamed(context, '/ver_rutas'),
+          ),
+          _item(
             Icons.settings,
             "Configuración",
             () => Navigator.pushNamed(context, '/configuracion'),
           ),
         ];
-
       case "despachador":
         return [
           _item(
@@ -269,9 +288,29 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
             () => Navigator.pushNamed(context, '/menu_principal'),
           ),
           _item(
-            Icons.person_add,
-            "Añadir Choferes",
+            Icons.people,
+            "Gestión choferes",
             () => Navigator.pushNamed(context, '/gestion_chofer'),
+          ),
+          _item(
+            Icons.directions_bus,
+            "Gestión de Unidades",
+            () => Navigator.pushNamed(context, '/unidades_transporte'),
+          ),
+          _item(
+            Icons.map,
+            "Ver Rutas",
+            () => Navigator.pushNamed(context, '/ver_rutas'),
+          ),
+          _item(
+            Icons.message,
+            "Mensajes",
+            () => Navigator.pushNamed(context, '/mensajes'),
+          ),
+          _item(
+            Icons.gps_fixed,
+            "Monitoreo GPS",
+            () => Navigator.pushNamed(context, '/monitoreo_gps'),
           ),
           _item(
             Icons.settings,
@@ -279,7 +318,6 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
             () => Navigator.pushNamed(context, '/configuracion'),
           ),
         ];
-
       case "chofer":
         return [
           _item(
@@ -299,12 +337,16 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
           ),
           _item(Icons.qr_code_scanner, "Escaneo QR", () {}),
           _item(
+            Icons.map,
+            "Ver Rutas",
+            () => Navigator.pushNamed(context, '/ver_rutas'),
+          ),
+          _item(
             Icons.settings,
             "Configuración",
             () => Navigator.pushNamed(context, '/configuracion'),
           ),
         ];
-
       default:
         return [
           _item(
