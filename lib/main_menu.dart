@@ -84,10 +84,10 @@ class PantallaPrincipal extends StatelessWidget {
     switch (rol.toLowerCase()) {
       case 'admin':
         return [
-          IconButton(
-            icon: const Icon(Icons.message),
-            onPressed: () => Navigator.pushNamed(context, '/mensajes'),
-          ),
+          //  IconButton(
+          //  icon: const Icon(Icons.message),
+          //onPressed: () => Navigator.pushNamed(context, '/mensajes'),
+          //),
           IconButton(
             icon: const Icon(Icons.map),
             onPressed: () => Navigator.pushNamed(context, '/monitoreo_gps'),

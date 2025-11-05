@@ -42,7 +42,7 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
           final data = doc.data()!;
           _nombre = data["nombre"] ?? "Usuario";
           _nombreDeUsuario = data["nombre_de_usuario"] ?? "username";
-          _correo = data["correo"];
+          _correo = data["email"]; // 🔹 aquí usamos el campo correcto de la BD
           _tipoOperador = data["tipo de operador"];
           _rol = data["rol"] ?? "invitado";
           _fotoUrl = data["fotoUrl"];
@@ -179,14 +179,9 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
-                if (_correo != null && _correo!.isNotEmpty)
-                  Text(
-                    _correo!,
-                    style: const TextStyle(color: Colors.white70, fontSize: 13),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                // 🔹 username y email en la misma línea
                 Text(
-                  "@$_nombreDeUsuario",
+                  "@$_nombreDeUsuario${_correo != null && _correo!.isNotEmpty ? ' $_correo' : ''}",
                   style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 13,
